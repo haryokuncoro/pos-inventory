@@ -23,11 +23,15 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { signIn } from "@/server/users"
+import { signUp } from "@/server/users"
 import { useState } from "react"
 import { authClient } from "@/lib/auth-client"
 
 const formSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters.")
+    .max(100, "Name must be at most 100 characters."),  
   email: z
     .string()
     .email("Invalid email address"),
@@ -37,7 +41,7 @@ const formSchema = z.object({
     .max(100, "Password must be at most 100 characters."),
 })
 
-export function LoginForm({
+export function RegisterForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
@@ -46,6 +50,7 @@ export function LoginForm({
     const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
     },
@@ -60,7 +65,7 @@ export function LoginForm({
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
-    const { success, message } = await signIn(data.email, data.password)
+    const { success, message } = await signUp(data.name, data.email, data.password)
     if(success) {
       toast.success(message)
       router.push("/dashboard")
@@ -73,16 +78,15 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome back</CardTitle>
+          <CardTitle className="text-xl">Create an account</CardTitle>
           <CardDescription>
-            Login with your Email or Google account
+            Register with your Email or Google account
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form id="form-login" onSubmit={form.handleSubmit(onSubmit)}>
+          <form id="form-register" onSubmit={form.handleSubmit(onSubmit)}>
             <FieldGroup>
               <Field>
-                
                 <Button variant="outline" type="button" onClick={signInwithGoogle}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -90,23 +94,44 @@ export function LoginForm({
                       fill="currentColor"
                     />
                   </svg>
-                  Login with Google
+                  Register with Google
                 </Button>
               </Field>
               <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                 Or continue with
               </FieldSeparator>
               <Controller
+                  name="name"
+                  control={form.control}
+                  render={({ field, fieldState }) => (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="form-register-name">
+                        Name
+                      </FieldLabel>
+                      <Input
+                        {...field}
+                        id="form-register-name"
+                        aria-invalid={fieldState.invalid}
+                        placeholder="Your name"
+                        autoComplete="off"
+                      />
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )}
+                />
+              <Controller
               name="email"
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-rhf-demo-title">
+                  <FieldLabel htmlFor="form-register-email">
                     Email
                   </FieldLabel>
                   <Input
                     {...field}
-                    id="form-login-email"
+                    id="form-register-email"
                     aria-invalid={fieldState.invalid}
                     placeholder="email@example.com"
                     autoComplete="off"
@@ -122,13 +147,13 @@ export function LoginForm({
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-login-password">
+                  <FieldLabel htmlFor="form-register-password">
                     Password
                   </FieldLabel>
                   <Input
                     {...field}
                     type="password"
-                    id="form-login-password"
+                    id="form-register-password"
                     aria-invalid={fieldState.invalid}
                     placeholder="********"
                     autoComplete="off"
@@ -141,10 +166,10 @@ export function LoginForm({
             />
               <Field>
                 <Button disabled={isLoading} type="submit">
-                  {isLoading ? <Loader2 className="animate-spin size-4" /> : "Login"}
+                  {isLoading ? <Loader2 className="animate-spin size-4" /> : "Register"}
                 </Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="/register">Sign up</a>
+                  Already have an account? <a href="/login">Login</a>
                 </FieldDescription>
               </Field>
             </FieldGroup>
