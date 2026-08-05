@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { z } from "zod"
 import { useForm, Controller } from "react-hook-form"
+import { Loader2 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { signIn } from "@/server/users"
+import { useState } from "react"
 
 const formSchema = z.object({
   email: z
@@ -38,6 +40,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+    const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
     const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,6 +51,7 @@ export function LoginForm({
   })
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
+    setIsLoading(true)
     const { success, message } = await signIn(data.email, data.password)
     if(success) {
       toast.success(message)
@@ -55,6 +59,7 @@ export function LoginForm({
     } else {
       toast.error(message)
     }
+    setIsLoading(false)
   }
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -122,6 +127,7 @@ export function LoginForm({
                   </FieldLabel>
                   <Input
                     {...field}
+                    type="password"
                     id="form-login-password"
                     aria-invalid={fieldState.invalid}
                     placeholder="********"
@@ -134,7 +140,9 @@ export function LoginForm({
               )}
             />
               <Field>
-                <Button type="submit">Login</Button>
+                <Button disabled={isLoading} type="submit">
+                  {isLoading ? <Loader2 className="animate-spin size-4" /> : "Login"}
+                </Button>
                 <FieldDescription className="text-center">
                   Don&apos;t have an account? <a href="#">Sign up</a>
                 </FieldDescription>
