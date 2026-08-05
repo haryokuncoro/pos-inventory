@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils"
 import { z } from "zod"
 import { useForm, Controller } from "react-hook-form"
 import { Loader2 } from "lucide-react"
+import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -144,7 +145,8 @@ export function LoginForm({
                   {isLoading ? <Loader2 className="animate-spin size-4" /> : "Login"}
                 </Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="/register">Sign up</a>
+                  Don&apos;t have an account?
+                  <Link href="/register"> Sign up</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>
