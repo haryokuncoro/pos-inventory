@@ -24,7 +24,7 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { signIn } from "@/server/users"
+import { signIn } from "@/lib/actions/users"
 import { useState } from "react"
 import { authClient } from "@/lib/auth-client"
 
@@ -42,10 +42,10 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  
-    const [isLoading, setIsLoading] = useState(false)
-    const router = useRouter()
-    const form = useForm<z.infer<typeof formSchema>>({
+
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
@@ -63,7 +63,7 @@ export function LoginForm({
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
     const { success, message } = await signIn(data.email, data.password)
-    if(success) {
+    if (success) {
       toast.success(message)
       router.push("/dashboard")
     } else {
@@ -84,7 +84,7 @@ export function LoginForm({
           <form id="form-login" onSubmit={form.handleSubmit(onSubmit)}>
             <FieldGroup>
               <Field>
-                
+
                 <Button variant="outline" type="button" onClick={signInwithGoogle}>
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
@@ -99,48 +99,48 @@ export function LoginForm({
                 Or continue with
               </FieldSeparator>
               <Controller
-              name="email"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-rhf-demo-title">
-                    Email
-                  </FieldLabel>
-                  <Input
-                    {...field}
-                    id="form-login-email"
-                    aria-invalid={fieldState.invalid}
-                    placeholder="email@example.com"
-                    autoComplete="off"
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
-               <Controller
-              name="password"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="form-login-password">
-                    Password
-                  </FieldLabel>
-                  <Input
-                    {...field}
-                    type="password"
-                    id="form-login-password"
-                    aria-invalid={fieldState.invalid}
-                    placeholder="********"
-                    autoComplete="off"
-                  />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
-                </Field>
-              )}
-            />
+                name="email"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="form-rhf-demo-title">
+                      Email
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="form-login-email"
+                      aria-invalid={fieldState.invalid}
+                      placeholder="email@example.com"
+                      autoComplete="off"
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
+              <Controller
+                name="password"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="form-login-password">
+                      Password
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      type="password"
+                      id="form-login-password"
+                      aria-invalid={fieldState.invalid}
+                      placeholder="********"
+                      autoComplete="off"
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
               <Field>
                 <Button disabled={isLoading} type="submit">
                   {isLoading ? <Loader2 className="animate-spin size-4" /> : "Login"}
