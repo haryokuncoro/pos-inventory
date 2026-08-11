@@ -1,5 +1,18 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  index,
+  integer,
+  numeric,
+  pgEnum,
+} from "drizzle-orm/pg-core";
+
+/* =========================================================
+ * AUTH
+ * ========================================================= */
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -10,7 +23,7 @@ export const user = pgTable("user", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
@@ -22,7 +35,7 @@ export const session = pgTable(
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
@@ -51,7 +64,7 @@ export const account = pgTable(
     password: text("password"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index("account_userId_idx").on(table.userId)],
@@ -67,15 +80,327 @@ export const verification = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
+/* =========================================================
+ * ENUMS
+ * ========================================================= */
+
+export const saleStatusEnum = pgEnum("sale_status", [
+  "COMPLETED",
+  "VOIDED",
+]);
+
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "CASH",
+  "QRIS",
+  "CARD",
+  "TRANSFER",
+]);
+
+export const inventoryTransactionTypeEnum = pgEnum(
+  "inventory_transaction_type",
+  [
+    "PURCHASE",
+    "SALE",
+    "SALE_RETURN",
+    "ADJUSTMENT_IN",
+    "ADJUSTMENT_OUT",
+  ],
+);
+
+/* =========================================================
+ * PRODUCT
+ * ========================================================= */
+
+export const category = pgTable("category", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const product = pgTable(
+  "product",
+  {
+    id: text("id").primaryKey(),
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => category.id),
+
+    name: text("name").notNull(),
+    description: text("description"),
+    isActive: boolean("is_active").default(true).notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("product_categoryId_idx").on(table.categoryId),
+  ],
+);
+
+export const productVariant = pgTable(
+  "product_variant",
+  {
+    id: text("id").primaryKey(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => product.id, { onDelete: "cascade" }),
+
+    sku: text("sku").notNull().unique(),
+    name: text("name").notNull(),
+
+    costPrice: numeric("cost_price", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+
+    sellingPrice: numeric("selling_price", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+
+    isActive: boolean("is_active").default(true).notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("productVariant_productId_idx").on(table.productId),
+  ],
+);
+
+/* =========================================================
+ * WAREHOUSE / STORE
+ * ========================================================= */
+
+export const warehouse = pgTable("warehouse", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  address: text("address"),
+  isActive: boolean("is_active").default(true).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+/* =========================================================
+ * INVENTORY
+ * ========================================================= */
+
+export const inventoryStock = pgTable(
+  "inventory_stock",
+  {
+    id: text("id").primaryKey(),
+
+    warehouseId: text("warehouse_id")
+      .notNull()
+      .references(() => warehouse.id),
+
+    variantId: text("variant_id")
+      .notNull()
+      .references(() => productVariant.id),
+
+    quantity: integer("quantity").notNull().default(0),
+
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("inventoryStock_warehouseId_idx").on(table.warehouseId),
+    index("inventoryStock_variantId_idx").on(table.variantId),
+  ],
+);
+
+export const inventoryTransaction = pgTable(
+  "inventory_transaction",
+  {
+    id: text("id").primaryKey(),
+
+    warehouseId: text("warehouse_id")
+      .notNull()
+      .references(() => warehouse.id),
+
+    variantId: text("variant_id")
+      .notNull()
+      .references(() => productVariant.id),
+
+    type: inventoryTransactionTypeEnum("type").notNull(),
+
+    quantity: integer("quantity").notNull(),
+
+    referenceType: text("reference_type"),
+    referenceId: text("reference_id"),
+
+    reason: text("reason"),
+
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("inventoryTransaction_variantId_idx").on(table.variantId),
+    index("inventoryTransaction_warehouseId_idx").on(table.warehouseId),
+    index("inventoryTransaction_reference_idx").on(
+      table.referenceType,
+      table.referenceId,
+    ),
+  ],
+);
+
+/* =========================================================
+ * POS / SALES
+ * ========================================================= */
+
+export const sale = pgTable(
+  "sale",
+  {
+    id: text("id").primaryKey(),
+
+    invoiceNumber: text("invoice_number").notNull().unique(),
+
+    warehouseId: text("warehouse_id")
+      .notNull()
+      .references(() => warehouse.id),
+
+    cashierId: text("cashier_id")
+      .notNull()
+      .references(() => user.id),
+
+    subtotal: numeric("subtotal", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+
+    discountAmount: numeric("discount_amount", {
+      precision: 15,
+      scale: 2,
+    })
+      .default("0")
+      .notNull(),
+
+    taxAmount: numeric("tax_amount", {
+      precision: 15,
+      scale: 2,
+    })
+      .default("0")
+      .notNull(),
+
+    totalAmount: numeric("total_amount", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+
+    status: saleStatusEnum("status")
+      .default("COMPLETED")
+      .notNull(),
+
+    soldAt: timestamp("sold_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("sale_warehouseId_idx").on(table.warehouseId),
+    index("sale_cashierId_idx").on(table.cashierId),
+    index("sale_soldAt_idx").on(table.soldAt),
+  ],
+);
+
+export const saleItem = pgTable(
+  "sale_item",
+  {
+    id: text("id").primaryKey(),
+
+    saleId: text("sale_id")
+      .notNull()
+      .references(() => sale.id, { onDelete: "cascade" }),
+
+    variantId: text("variant_id")
+      .notNull()
+      .references(() => productVariant.id),
+
+    quantity: integer("quantity").notNull(),
+
+    unitPrice: numeric("unit_price", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+
+    discountAmount: numeric("discount_amount", {
+      precision: 15,
+      scale: 2,
+    })
+      .default("0")
+      .notNull(),
+
+    subtotal: numeric("subtotal", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+  },
+  (table) => [
+    index("saleItem_saleId_idx").on(table.saleId),
+    index("saleItem_variantId_idx").on(table.variantId),
+  ],
+);
+
+/* =========================================================
+ * PAYMENT
+ * ========================================================= */
+
+export const payment = pgTable(
+  "payment",
+  {
+    id: text("id").primaryKey(),
+
+    saleId: text("sale_id")
+      .notNull()
+      .references(() => sale.id, { onDelete: "cascade" }),
+
+    method: paymentMethodEnum("method").notNull(),
+
+    amount: numeric("amount", {
+      precision: 15,
+      scale: 2,
+    }).notNull(),
+
+    paidAt: timestamp("paid_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("payment_saleId_idx").on(table.saleId),
+  ],
+);
+
+/* =========================================================
+ * RELATIONS
+ * ========================================================= */
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  sales: many(sale),
+  inventoryTransactions: many(inventoryTransaction),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -92,10 +417,143 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }));
 
+export const categoryRelations = relations(
+  category,
+  ({ many }) => ({
+    products: many(product),
+  }),
+);
+
+export const productRelations = relations(
+  product,
+  ({ one, many }) => ({
+    category: one(category, {
+      fields: [product.categoryId],
+      references: [category.id],
+    }),
+    variants: many(productVariant),
+  }),
+);
+
+export const productVariantRelations = relations(
+  productVariant,
+  ({ one, many }) => ({
+    product: one(product, {
+      fields: [productVariant.productId],
+      references: [product.id],
+    }),
+    inventoryStocks: many(inventoryStock),
+    inventoryTransactions: many(inventoryTransaction),
+    saleItems: many(saleItem),
+  }),
+);
+
+export const warehouseRelations = relations(
+  warehouse,
+  ({ many }) => ({
+    inventoryStocks: many(inventoryStock),
+    inventoryTransactions: many(inventoryTransaction),
+    sales: many(sale),
+  }),
+);
+
+export const inventoryStockRelations = relations(
+  inventoryStock,
+  ({ one }) => ({
+    warehouse: one(warehouse, {
+      fields: [inventoryStock.warehouseId],
+      references: [warehouse.id],
+    }),
+    variant: one(productVariant, {
+      fields: [inventoryStock.variantId],
+      references: [productVariant.id],
+    }),
+  }),
+);
+
+export const inventoryTransactionRelations = relations(
+  inventoryTransaction,
+  ({ one }) => ({
+    warehouse: one(warehouse, {
+      fields: [inventoryTransaction.warehouseId],
+      references: [warehouse.id],
+    }),
+    variant: one(productVariant, {
+      fields: [inventoryTransaction.variantId],
+      references: [productVariant.id],
+    }),
+    createdByUser: one(user, {
+      fields: [inventoryTransaction.createdBy],
+      references: [user.id],
+    }),
+  }),
+);
+
+export const saleRelations = relations(
+  sale,
+  ({ one, many }) => ({
+    warehouse: one(warehouse, {
+      fields: [sale.warehouseId],
+      references: [warehouse.id],
+    }),
+    cashier: one(user, {
+      fields: [sale.cashierId],
+      references: [user.id],
+    }),
+    items: many(saleItem),
+    payments: many(payment),
+  }),
+);
+
+export const saleItemRelations = relations(
+  saleItem,
+  ({ one }) => ({
+    sale: one(sale, {
+      fields: [saleItem.saleId],
+      references: [sale.id],
+    }),
+    variant: one(productVariant, {
+      fields: [saleItem.variantId],
+      references: [productVariant.id],
+    }),
+  }),
+);
+
+export const paymentRelations = relations(
+  payment,
+  ({ one }) => ({
+    sale: one(sale, {
+      fields: [payment.saleId],
+      references: [sale.id],
+    }),
+  }),
+);
+
+/* =========================================================
+ * SCHEMA
+ * ========================================================= */
 
 export const schema = {
+  // Auth
   user,
   session,
   account,
   verification,
+
+  // Product
+  category,
+  product,
+  productVariant,
+
+  // Store
+  warehouse,
+
+  // Inventory
+  inventoryStock,
+  inventoryTransaction,
+
+  // POS
+  sale,
+  saleItem,
+  payment,
 };
