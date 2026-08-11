@@ -42,7 +42,7 @@ type ProductTableProps = {
 const variantSchema = z.object({
   id: z.string().optional(),
   sku: z.string().trim().min(1, "SKU is required."),
-  stockQuantity: z.number().min(0, "Stock quantity cannot be negative."),
+  stockQuantity: z.string().min(1, "Stock quantity is required."),
   name: z.string().trim().min(1, "Variant name is required."),
   costPrice: z.string().min(1, "Cost price is required."),
   sellingPrice: z.string().min(1, "Selling price is required."),
@@ -319,7 +319,7 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
           isSubmitting={isSubmitting}
           openCreateModal={openCreateModal}
           variants={variants}
-          appendVariant={() => append({ sku: "", name: "", costPrice: "", sellingPrice: "", isActive: true })}
+          appendVariant={() => append({ sku: "", name: "", costPrice: "", sellingPrice: "", stockQuantity: 0, isActive: true })}
           removeVariant={(index) => remove(index)}
         />
       </div>
