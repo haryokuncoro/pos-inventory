@@ -1,18 +1,9 @@
 "use client"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Controller, useForm } from "react-hook-form"
+import {  useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import CategoryDialogForm from "./dialog-form"
 
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -154,15 +145,7 @@ export function CategoryTable({ initialCategories }: CategoryTableProps) {
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Categories</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage your product categories with search, pagination, and quick updates.
-          </p>
-        </div>
-      </div>
-
+     
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <Input
           placeholder="Search by name"
@@ -193,6 +176,20 @@ export function CategoryTable({ initialCategories }: CategoryTableProps) {
           </select>
         </div>
       </div>
+
+      <div className="flex justify-end">
+          <CategoryDialogForm
+              selectedCategory={selectedCategory}
+              dialogOpen={dialogOpen}
+              setDialogOpen={setDialogOpen}
+              resetModal={resetModal}
+              onSubmit={onSubmit}
+              control={control}
+              handleSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
+              openCreateModal={openCreateModal}
+            />
+        </div>
 
       <div className="overflow-hidden rounded-xl border">
         <Table>
@@ -248,64 +245,7 @@ export function CategoryTable({ initialCategories }: CategoryTableProps) {
         </div>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
-        setDialogOpen(open)
-        if (!open) {
-          resetModal()
-        }
-      }}>
-        <DialogTrigger
-          render={<Button onClick={openCreateModal}>Add category</Button>}
-        />
-
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{selectedCategory ? "Update category" : "Create category"}</DialogTitle>
-            <DialogDescription>
-              {selectedCategory
-                ? "Update the category name below."
-                : "Create a new product category for your inventory."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="category-name">Name</Label>
-              <Controller
-                name="name"
-                control={control}
-                rules={{ required: "Category name is required." }}
-                render={({ field, fieldState }) => (
-                  <div className="space-y-1">
-                    <Input
-                      id="category-name"
-                      placeholder="Enter category name"
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                    {fieldState.error ? (
-                      <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                    ) : null}
-                  </div>
-                )}
-              />
-            </div>
-
-            <DialogFooter>
-              <DialogClose
-                render={
-                  <Button type="button" variant="outline">
-                    Cancel
-                  </Button>
-                }
-              />
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : selectedCategory ? "Save changes" : "Create"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      
     </div>
   )
 }
