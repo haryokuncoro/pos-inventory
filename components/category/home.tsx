@@ -1,12 +1,13 @@
-import {
-  Card,
-} from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
+import { getAllCategories } from "@/lib/actions/categories"
 import { CategoryTable } from "./table"
 
-export default function CategoryHomePage() {
+export default async function CategoryHomePage() {
+  const categories = await getAllCategories()
+
   return (
     <Card className="w-full">
-      <CategoryTable />
+      <CategoryTable initialCategories={categories} />
     </Card>
   )
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/db/drizzle";
 import { category, InsertCategory } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -38,7 +39,13 @@ export async function createCategory(
   categoryData: CreateCategoryInput
 ) {
   try {
-    await db.insert(category).values(categoryData);
+    const [createdCategory] = await db
+      .insert(category)
+      .values(categoryData)
+      .returning();
+
+    revalidatePath("/dashboard/category");
+    return createdCategory;
   } catch (error) {
     console.error("Error creating category:", error);
     throw new Error("Failed to create category");
@@ -50,10 +57,14 @@ export async function updateCategory(
   categoryData: UpdateCategoryInput
 ) {
   try {
-    await db
+    const [updatedCategory] = await db
       .update(category)
       .set(categoryData)
-      .where(eq(category.id, id));
+      .where(eq(category.id, id))
+      .returning();
+
+    revalidatePath("/dashboard/category");
+    return updatedCategory;
   } catch (error) {
     console.error(`Error updating category with id ${id}:`, error);
     throw new Error(`Failed to update category with id ${id}`);
