@@ -3,7 +3,6 @@
 import * as React from "react"
 
 import { SearchForm } from "@/components/dashboard/search-form"
-import { VersionSwitcher } from "@/components/dashboard/version-switcher"
 import {
   Collapsible,
   CollapsibleContent,
@@ -32,146 +31,79 @@ const data = {
       url: "#",
       items: [
         {
-          title: "Installation",
+          title: "POS",
           url: "#",
         },
         {
-          title: "Project Structure",
+          title: "Sales",
           url: "#",
         },
       ],
     },
     {
-      title: "Build Your Application",
+      title: "Products",
       url: "#",
       items: [
         {
-          title: "Routing",
+          title: "Manage Products",
           url: "#",
         },
         {
-          title: "Data Fetching",
+          title: "Manage Categories",
           url: "#",
           isActive: true,
-        },
-        {
-          title: "Rendering",
-          url: "#",
-        },
-        {
-          title: "Caching",
-          url: "#",
-        },
-        {
-          title: "Styling",
-          url: "#",
-        },
-        {
-          title: "Optimizing",
-          url: "#",
-        },
-        {
-          title: "Configuring",
-          url: "#",
-        },
-        {
-          title: "Testing",
-          url: "#",
-        },
-        {
-          title: "Authentication",
-          url: "#",
-        },
-        {
-          title: "Deploying",
-          url: "#",
-        },
-        {
-          title: "Upgrading",
-          url: "#",
-        },
-        {
-          title: "Examples",
-          url: "#",
-        },
+        }
       ],
     },
-    {
-      title: "API Reference",
+     {
+      title: "Payments",
       url: "#",
       items: [
         {
-          title: "Components",
+          title: "Manage Payment Methods",
           url: "#",
-        },
-        {
-          title: "File Conventions",
-          url: "#",
-        },
-        {
-          title: "Functions",
-          url: "#",
-        },
-        {
-          title: "next.config.js Options",
-          url: "#",
-        },
-        {
-          title: "CLI",
-          url: "#",
-        },
-        {
-          title: "Edge Runtime",
-          url: "#",
-        },
+          isActive: true,
+        }
       ],
     },
     {
-      title: "Architecture",
+      title: "Users",
       url: "#",
       items: [
         {
-          title: "Accessibility",
+          title: "Manage Users",
           url: "#",
         },
         {
-          title: "Fast Refresh",
+          title: "Manage Roles",
           url: "#",
         },
-        {
-          title: "Next.js Compiler",
-          url: "#",
-        },
-        {
-          title: "Supported Browsers",
-          url: "#",
-        },
-        {
-          title: "Turbopack",
-          url: "#",
-        },
+        
       ],
     },
     {
-      title: "Community",
+      title: "Settings",
       url: "#",
       items: [
         {
-          title: "Contribution Guide",
+          title: "Update Profile",
           url: "#",
         },
+        {
+          title: "Logout",
+          url: "#",
+        },
+        
       ],
     },
+    
   ],
 }
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <VersionSwitcher
-          versions={data.versions}
-          defaultVersion={data.versions[0]}
-        />
+        
         <SearchForm />
       </SidebarHeader>
       <SidebarContent className="gap-0">
