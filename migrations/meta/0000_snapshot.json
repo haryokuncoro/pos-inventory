@@ -1,5 +1,5 @@
 {
-  "id": "dcf6cc9d-29d3-4af4-954a-29eb254d57ba",
+  "id": "a6b17cbe-b2b8-4e6a-9c90-50d0a9ece39e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -174,124 +174,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.inventory_stock": {
-      "name": "inventory_stock",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "warehouse_id": {
-          "name": "warehouse_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "variant_id": {
-          "name": "variant_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "quantity": {
-          "name": "quantity",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "inventoryStock_warehouseId_idx": {
-          "name": "inventoryStock_warehouseId_idx",
-          "columns": [
-            {
-              "expression": "warehouse_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "inventoryStock_variantId_idx": {
-          "name": "inventoryStock_variantId_idx",
-          "columns": [
-            {
-              "expression": "variant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "inventory_stock_warehouse_id_warehouse_id_fk": {
-          "name": "inventory_stock_warehouse_id_warehouse_id_fk",
-          "tableFrom": "inventory_stock",
-          "tableTo": "warehouse",
-          "columnsFrom": [
-            "warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "inventory_stock_variant_id_product_variant_id_fk": {
-          "name": "inventory_stock_variant_id_product_variant_id_fk",
-          "tableFrom": "inventory_stock",
-          "tableTo": "product_variant",
-          "columnsFrom": [
-            "variant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "inventoryStock_warehouse_variant_unique": {
-          "name": "inventoryStock_warehouse_variant_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "warehouse_id",
-            "variant_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {
-        "inventoryStock_quantity_nonnegative": {
-          "name": "inventoryStock_quantity_nonnegative",
-          "value": "\"inventory_stock\".\"quantity\" >= 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.inventory_transaction": {
       "name": "inventory_transaction",
       "schema": "",
@@ -302,12 +184,6 @@
           "primaryKey": true,
           "notNull": true,
           "default": "gen_random_uuid()"
-        },
-        "warehouse_id": {
-          "name": "warehouse_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
         },
         "variant_id": {
           "name": "variant_id",
@@ -376,21 +252,6 @@
           "method": "btree",
           "with": {}
         },
-        "inventoryTransaction_warehouseId_idx": {
-          "name": "inventoryTransaction_warehouseId_idx",
-          "columns": [
-            {
-              "expression": "warehouse_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "inventoryTransaction_reference_idx": {
           "name": "inventoryTransaction_reference_idx",
           "columns": [
@@ -414,19 +275,6 @@
         }
       },
       "foreignKeys": {
-        "inventory_transaction_warehouse_id_warehouse_id_fk": {
-          "name": "inventory_transaction_warehouse_id_warehouse_id_fk",
-          "tableFrom": "inventory_transaction",
-          "tableTo": "warehouse",
-          "columnsFrom": [
-            "warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "inventory_transaction_variant_id_product_variant_id_fk": {
           "name": "inventory_transaction_variant_id_product_variant_id_fk",
           "tableFrom": "inventory_transaction",
@@ -676,6 +524,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "stock_quantity": {
+          "name": "stock_quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "is_active": {
           "name": "is_active",
           "type": "boolean",
@@ -749,6 +604,10 @@
         "productVariant_sellingPrice_nonnegative": {
           "name": "productVariant_sellingPrice_nonnegative",
           "value": "\"product_variant\".\"selling_price\" >= 0"
+        },
+        "productVariant_stockQuantity_nonnegative": {
+          "name": "productVariant_stockQuantity_nonnegative",
+          "value": "\"product_variant\".\"stock_quantity\" >= 0"
         }
       },
       "isRLSEnabled": false
@@ -767,12 +626,6 @@
         "invoice_number": {
           "name": "invoice_number",
           "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "warehouse_id": {
-          "name": "warehouse_id",
-          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -832,21 +685,6 @@
         }
       },
       "indexes": {
-        "sale_warehouseId_idx": {
-          "name": "sale_warehouseId_idx",
-          "columns": [
-            {
-              "expression": "warehouse_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "sale_cashierId_idx": {
           "name": "sale_cashierId_idx",
           "columns": [
@@ -879,19 +717,6 @@
         }
       },
       "foreignKeys": {
-        "sale_warehouse_id_warehouse_id_fk": {
-          "name": "sale_warehouse_id_warehouse_id_fk",
-          "tableFrom": "sale",
-          "tableTo": "warehouse",
-          "columnsFrom": [
-            "warehouse_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "sale_cashier_id_user_id_fk": {
           "name": "sale_cashier_id_user_id_fk",
           "tableFrom": "sale",
@@ -1298,73 +1123,6 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.warehouse": {
-      "name": "warehouse",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "code": {
-          "name": "code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "address": {
-          "name": "address",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "warehouse_code_unique": {
-          "name": "warehouse_code_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

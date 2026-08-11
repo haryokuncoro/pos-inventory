@@ -9,20 +9,27 @@ import {
   integer,
   numeric,
   pgEnum,
-  unique,
   check,
 } from "drizzle-orm/pg-core";
 
- // AUTH
-
+// AUTH
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
+
   name: text("name").notNull(),
+
   email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").default(false).notNull(),
+
+  emailVerified: boolean("email_verified")
+    .default(false)
+    .notNull(),
+
   image: text("image"),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at")
+    .defaultNow()
+    .notNull(),
+
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => new Date())
@@ -38,13 +45,16 @@ export const session = pgTable(
 
     token: text("token").notNull().unique(),
 
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at")
+      .defaultNow()
+      .notNull(),
 
     updatedAt: timestamp("updated_at")
       .$onUpdate(() => new Date())
       .notNull(),
 
     ipAddress: text("ip_address"),
+
     userAgent: text("user_agent"),
 
     userId: text("user_id")
@@ -64,6 +74,7 @@ export const account = pgTable(
     id: text("id").primaryKey(),
 
     accountId: text("account_id").notNull(),
+
     providerId: text("provider_id").notNull(),
 
     userId: text("user_id")
@@ -73,16 +84,26 @@ export const account = pgTable(
       }),
 
     accessToken: text("access_token"),
+
     refreshToken: text("refresh_token"),
+
     idToken: text("id_token"),
 
-    accessTokenExpiresAt: timestamp("access_token_expires_at"),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    accessTokenExpiresAt: timestamp(
+      "access_token_expires_at",
+    ),
+
+    refreshTokenExpiresAt: timestamp(
+      "refresh_token_expires_at",
+    ),
 
     scope: text("scope"),
+
     password: text("password"),
 
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at")
+      .defaultNow()
+      .notNull(),
 
     updatedAt: timestamp("updated_at")
       .$onUpdate(() => new Date())
@@ -99,11 +120,14 @@ export const verification = pgTable(
     id: text("id").primaryKey(),
 
     identifier: text("identifier").notNull(),
+
     value: text("value").notNull(),
 
     expiresAt: timestamp("expires_at").notNull(),
 
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at")
+      .defaultNow()
+      .notNull(),
 
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -111,23 +135,27 @@ export const verification = pgTable(
       .notNull(),
   },
   (table) => [
-    index("verification_identifier_idx").on(table.identifier),
+    index("verification_identifier_idx").on(
+      table.identifier,
+    ),
   ],
 );
 
 // ENUMS
-
 export const saleStatusEnum = pgEnum("sale_status", [
   "COMPLETED",
   "VOIDED",
 ]);
 
-export const paymentMethodEnum = pgEnum("payment_method", [
-  "CASH",
-  "QRIS",
-  "CARD",
-  "TRANSFER",
-]);
+export const paymentMethodEnum = pgEnum(
+  "payment_method",
+  [
+    "CASH",
+    "QRIS",
+    "CARD",
+    "TRANSFER",
+  ],
+);
 
 export const inventoryTransactionTypeEnum = pgEnum(
   "inventory_transaction_type",
@@ -141,7 +169,6 @@ export const inventoryTransactionTypeEnum = pgEnum(
 );
 
 // PRODUCT
-
 export const category = pgTable("category", {
   id: uuid("id")
     .primaryKey()
@@ -161,8 +188,11 @@ export const category = pgTable("category", {
     .notNull(),
 });
 
-export type InsertCategory = typeof category.$inferInsert;
-export type SelectCategory = typeof category.$inferSelect;
+export type InsertCategory =
+  typeof category.$inferInsert;
+
+export type SelectCategory =
+  typeof category.$inferSelect;
 
 export const product = pgTable(
   "product",
@@ -193,12 +223,17 @@ export const product = pgTable(
       .notNull(),
   },
   (table) => [
-    index("product_categoryId_idx").on(table.categoryId),
+    index("product_categoryId_idx").on(
+      table.categoryId,
+    ),
   ],
 );
 
-export type InsertProduct = typeof product.$inferInsert;
-export type SelectProduct = typeof product.$inferSelect;
+export type InsertProduct =
+  typeof product.$inferInsert;
+
+export type SelectProduct =
+  typeof product.$inferSelect;
 
 export const productVariant = pgTable(
   "product_variant",
@@ -229,6 +264,16 @@ export const productVariant = pgTable(
       scale: 2,
     }).notNull(),
 
+    /**
+     * Current stock.
+     *
+     * Single-store assumption:
+     * one variant has one current stock quantity.
+     */
+    stockQuantity: integer("stock_quantity")
+      .notNull()
+      .default(0),
+
     isActive: boolean("is_active")
       .default(true)
       .notNull(),
@@ -243,7 +288,9 @@ export const productVariant = pgTable(
       .notNull(),
   },
   (table) => [
-    index("productVariant_productId_idx").on(table.productId),
+    index("productVariant_productId_idx").on(
+      table.productId,
+    ),
 
     check(
       "productVariant_costPrice_nonnegative",
@@ -254,94 +301,27 @@ export const productVariant = pgTable(
       "productVariant_sellingPrice_nonnegative",
       sql`${table.sellingPrice} >= 0`,
     ),
-  ],
-);
-
-export type InsertProductVariant = typeof productVariant.$inferInsert;
-export type SelectProductVariant = typeof productVariant.$inferSelect;
-
-// WAREHOUSE / STORE
-
-export const warehouse = pgTable("warehouse", {
-  id: uuid("id")
-    .primaryKey()
-    .defaultRandom(),
-
-  code: text("code")
-    .notNull()
-    .unique(),
-
-  name: text("name").notNull(),
-
-  address: text("address"),
-
-  isActive: boolean("is_active")
-    .default(true)
-    .notNull(),
-
-  createdAt: timestamp("created_at")
-    .defaultNow()
-    .notNull(),
-
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
-
-// INVENTORY
-
-export const inventoryStock = pgTable(
-  "inventory_stock",
-  {
-    id: uuid("id")
-      .primaryKey()
-      .defaultRandom(),
-
-    warehouseId: uuid("warehouse_id")
-      .notNull()
-      .references(() => warehouse.id),
-
-    variantId: uuid("variant_id")
-      .notNull()
-      .references(() => productVariant.id),
-
-    quantity: integer("quantity")
-      .notNull()
-      .default(0),
-
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
-  },
-  (table) => [
-    unique("inventoryStock_warehouse_variant_unique").on(
-      table.warehouseId,
-      table.variantId,
-    ),
-
-    index("inventoryStock_warehouseId_idx").on(table.warehouseId),
-
-    index("inventoryStock_variantId_idx").on(table.variantId),
 
     check(
-      "inventoryStock_quantity_nonnegative",
-      sql`${table.quantity} >= 0`,
+      "productVariant_stockQuantity_nonnegative",
+      sql`${table.stockQuantity} >= 0`,
     ),
   ],
 );
 
+export type InsertProductVariant =
+  typeof productVariant.$inferInsert;
+
+export type SelectProductVariant =
+  typeof productVariant.$inferSelect;
+
+// INVENTORY
 export const inventoryTransaction = pgTable(
   "inventory_transaction",
   {
     id: uuid("id")
       .primaryKey()
       .defaultRandom(),
-
-    warehouseId: uuid("warehouse_id")
-      .notNull()
-      .references(() => warehouse.id),
 
     variantId: uuid("variant_id")
       .notNull()
@@ -350,10 +330,27 @@ export const inventoryTransaction = pgTable(
     type: inventoryTransactionTypeEnum("type")
       .notNull(),
 
-    quantity: integer("quantity")
-      .notNull(),
+    /**
+     * Positive = stock in
+     * Negative = stock out
+     */
+    quantity: integer("quantity").notNull(),
 
+    /**
+     * Example:
+     * SALE
+     * PURCHASE
+     * SALE_RETURN
+     * ADJUSTMENT
+     */
     referenceType: text("reference_type"),
+
+    /**
+     * ID of the related record.
+     *
+     * Example:
+     * sale.id
+     */
     referenceId: text("reference_id"),
 
     reason: text("reason"),
@@ -371,10 +368,6 @@ export const inventoryTransaction = pgTable(
       table.variantId,
     ),
 
-    index("inventoryTransaction_warehouseId_idx").on(
-      table.warehouseId,
-    ),
-
     index("inventoryTransaction_reference_idx").on(
       table.referenceType,
       table.referenceId,
@@ -387,8 +380,13 @@ export const inventoryTransaction = pgTable(
   ],
 );
 
-// POS / SALES
+export type InsertInventoryTransaction =
+  typeof inventoryTransaction.$inferInsert;
 
+export type SelectInventoryTransaction =
+  typeof inventoryTransaction.$inferSelect;
+
+// POS / SALES
 export const sale = pgTable(
   "sale",
   {
@@ -400,10 +398,6 @@ export const sale = pgTable(
       .notNull()
       .unique(),
 
-    warehouseId: uuid("warehouse_id")
-      .notNull()
-      .references(() => warehouse.id),
-
     cashierId: text("cashier_id")
       .notNull()
       .references(() => user.id),
@@ -413,10 +407,13 @@ export const sale = pgTable(
       scale: 2,
     }).notNull(),
 
-    discountAmount: numeric("discount_amount", {
-      precision: 15,
-      scale: 2,
-    })
+    discountAmount: numeric(
+      "discount_amount",
+      {
+        precision: 15,
+        scale: 2,
+      },
+    )
       .default("0")
       .notNull(),
 
@@ -445,11 +442,13 @@ export const sale = pgTable(
       .notNull(),
   },
   (table) => [
-    index("sale_warehouseId_idx").on(table.warehouseId),
+    index("sale_cashierId_idx").on(
+      table.cashierId,
+    ),
 
-    index("sale_cashierId_idx").on(table.cashierId),
-
-    index("sale_soldAt_idx").on(table.soldAt),
+    index("sale_soldAt_idx").on(
+      table.soldAt,
+    ),
 
     check(
       "sale_subtotal_nonnegative",
@@ -498,10 +497,13 @@ export const saleItem = pgTable(
       scale: 2,
     }).notNull(),
 
-    discountAmount: numeric("discount_amount", {
-      precision: 15,
-      scale: 2,
-    })
+    discountAmount: numeric(
+      "discount_amount",
+      {
+        precision: 15,
+        scale: 2,
+      },
+    )
       .default("0")
       .notNull(),
 
@@ -511,9 +513,13 @@ export const saleItem = pgTable(
     }).notNull(),
   },
   (table) => [
-    index("saleItem_saleId_idx").on(table.saleId),
+    index("saleItem_saleId_idx").on(
+      table.saleId,
+    ),
 
-    index("saleItem_variantId_idx").on(table.variantId),
+    index("saleItem_variantId_idx").on(
+      table.variantId,
+    ),
 
     check(
       "saleItem_quantity_positive",
@@ -538,7 +544,6 @@ export const saleItem = pgTable(
 );
 
 // PAYMENT
-
 export const payment = pgTable(
   "payment",
   {
@@ -565,7 +570,9 @@ export const payment = pgTable(
       .notNull(),
   },
   (table) => [
-    index("payment_saleId_idx").on(table.saleId),
+    index("payment_saleId_idx").on(
+      table.saleId,
+    ),
 
     check(
       "payment_amount_positive",
@@ -574,16 +581,18 @@ export const payment = pgTable(
   ],
 );
 
-//RELATIONS
-
-export const userRelations = relations(user, ({ many }) => ({
-  sessions: many(session),
-  accounts: many(account),
-
-  sales: many(sale),
-
-  inventoryTransactions: many(inventoryTransaction),
-}));
+// RELATIONS
+export const userRelations = relations(
+  user,
+  ({ many }) => ({
+    sessions: many(session),
+    accounts: many(account),
+    sales: many(sale),
+    inventoryTransactions: many(
+      inventoryTransaction,
+    ),
+  }),
+);
 
 export const sessionRelations = relations(
   session,
@@ -632,68 +641,37 @@ export const productVariantRelations = relations(
       references: [product.id],
     }),
 
-    inventoryStocks: many(inventoryStock),
-
-    inventoryTransactions: many(inventoryTransaction),
+    inventoryTransactions: many(
+      inventoryTransaction,
+    ),
 
     saleItems: many(saleItem),
   }),
 );
 
-export const warehouseRelations = relations(
-  warehouse,
-  ({ many }) => ({
-    inventoryStocks: many(inventoryStock),
+export const inventoryTransactionRelations =
+  relations(
+    inventoryTransaction,
+    ({ one }) => ({
+      variant: one(productVariant, {
+        fields: [
+          inventoryTransaction.variantId,
+        ],
+        references: [productVariant.id],
+      }),
 
-    inventoryTransactions: many(inventoryTransaction),
-
-    sales: many(sale),
-  }),
-);
-
-export const inventoryStockRelations = relations(
-  inventoryStock,
-  ({ one }) => ({
-    warehouse: one(warehouse, {
-      fields: [inventoryStock.warehouseId],
-      references: [warehouse.id],
+      createdByUser: one(user, {
+        fields: [
+          inventoryTransaction.createdBy,
+        ],
+        references: [user.id],
+      }),
     }),
-
-    variant: one(productVariant, {
-      fields: [inventoryStock.variantId],
-      references: [productVariant.id],
-    }),
-  }),
-);
-
-export const inventoryTransactionRelations = relations(
-  inventoryTransaction,
-  ({ one }) => ({
-    warehouse: one(warehouse, {
-      fields: [inventoryTransaction.warehouseId],
-      references: [warehouse.id],
-    }),
-
-    variant: one(productVariant, {
-      fields: [inventoryTransaction.variantId],
-      references: [productVariant.id],
-    }),
-
-    createdByUser: one(user, {
-      fields: [inventoryTransaction.createdBy],
-      references: [user.id],
-    }),
-  }),
-);
+  );
 
 export const saleRelations = relations(
   sale,
   ({ one, many }) => ({
-    warehouse: one(warehouse, {
-      fields: [sale.warehouseId],
-      references: [warehouse.id],
-    }),
-
     cashier: one(user, {
       fields: [sale.cashierId],
       references: [user.id],
@@ -731,7 +709,6 @@ export const paymentRelations = relations(
 );
 
 // SCHEMA
-
 export const schema = {
   // Auth
   user,
@@ -744,11 +721,7 @@ export const schema = {
   product,
   productVariant,
 
-  // Store
-  warehouse,
-
   // Inventory
-  inventoryStock,
   inventoryTransaction,
 
   // POS

@@ -5,8 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1786460956689,
-      "tag": "0000_init-db",
+      "when": 1786487721338,
+      "tag": "0000_init-table",
       "breakpoints": true
     }
   ]
