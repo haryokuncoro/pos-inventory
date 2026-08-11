@@ -1,17 +1,17 @@
-import { RegisterForm } from "@/components/register-form"
+import { RegisterForm } from "@/components/auth/register-form"
 import { auth } from "@/lib/auth"
 import { GalleryVerticalEndIcon } from "lucide-react"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 
 export default async function RegisterPage() {
-   const session = await auth.api.getSession({
-      headers: await headers(),
-    })
-  
-    if (session) {
-      redirect("/dashboard")
-    }
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  if (session) {
+    redirect("/dashboard")
+  }
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
