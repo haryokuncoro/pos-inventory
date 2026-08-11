@@ -197,6 +197,9 @@ export const product = pgTable(
   ],
 );
 
+export type InsertProduct = typeof product.$inferInsert;
+export type SelectProduct = typeof product.$inferSelect;
+
 export const productVariant = pgTable(
   "product_variant",
   {
