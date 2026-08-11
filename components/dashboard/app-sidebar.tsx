@@ -21,6 +21,8 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { ChevronRightIcon } from "lucide-react"
+import Link from "next/link"
+import { LogoutButton } from "../auth/logout-button"
 
 // This is sample data.
 const data = {
@@ -91,7 +93,7 @@ const data = {
         },
         {
           title: "Logout",
-          url: "#",
+          url: "/logout",
         },
         
       ],
@@ -128,12 +130,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <SidebarMenu>
                     {item.items.map((item) => (
                       <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          isActive={item.isActive}
-                          render={<a href={item.url} />}
-                        >
-                          {item.title}
-                        </SidebarMenuButton>
+                        {item.title == "Logout" ? (
+                          <LogoutButton />
+                        ) : (
+                          <SidebarMenuButton
+                            isActive={item.isActive}
+                            render={<Link href={item.url} />}
+                          >
+                            {item.title}
+                          </SidebarMenuButton>
+                        )}
                       </SidebarMenuItem>
                     ))}
                   </SidebarMenu>

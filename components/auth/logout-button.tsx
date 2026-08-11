@@ -1,7 +1,7 @@
 "use client"
 
 import {authClient} from "@/lib/auth-client"
-import { Button } from "@/components/ui/button"
+import { SidebarMenuButton } from "@/components/ui/sidebar"
 import { Loader2 } from "lucide-react"
 import { useState } from "react"
 
@@ -16,8 +16,8 @@ export function LogoutButton() {
   }
 
   return (
-    <Button onClick={handleLogout} disabled={isLoading}>
+    <SidebarMenuButton onClick={handleLogout} disabled={isLoading}>
       {isLoading ? <Loader2 className="animate-spin size-4" /> : "Logout"}
-    </Button>
+    </SidebarMenuButton>
   )
 }
