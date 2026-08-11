@@ -33,11 +33,11 @@ const data = {
       items: [
         {
           title: "POS",
-          url: "#",
+          url: "/dashboard/pos",
         },
         {
           title: "Sales",
-          url: "#",
+          url: "/dashboard/sales",
         },
       ],
     },
@@ -47,7 +47,7 @@ const data = {
       items: [
         {
           title: "Manage Products",
-          url: "#",
+          url: "/dashboard/product",
         },
         {
           title: "Manage Categories",
@@ -61,7 +61,7 @@ const data = {
       items: [
         {
           title: "Manage Payment Methods",
-          url: "#",
+          url: "/dashboard/payment-method",
         }
       ],
     },
@@ -71,11 +71,11 @@ const data = {
       items: [
         {
           title: "Manage Users",
-          url: "#",
+          url: "/dashboard/user",
         },
         {
           title: "Manage Roles",
-          url: "#",
+          url: "/dashboard/role",
         },
         
       ],
@@ -86,7 +86,7 @@ const data = {
       items: [
         {
           title: "Update Profile",
-          url: "#",
+          url: "/dashboard/profile",
         },
         {
           title: "Logout",
@@ -135,7 +135,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             isActive={item.url === pathname}
                             render={<Link href={item.url} />}
                           >
-                            {item.title}
+                            {item.url === pathname ? <b>{item.title}</b> : item.title}
                           </SidebarMenuButton>
                         )}
                       </SidebarMenuItem>
