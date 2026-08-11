@@ -23,10 +23,9 @@ import {
 import { ChevronRightIcon } from "lucide-react"
 import Link from "next/link"
 import { LogoutButton } from "../auth/logout-button"
-
+import { usePathname } from "next/navigation"
 // This is sample data.
 const data = {
-  versions: ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"],
   navMain: [
     {
       title: "Getting Started",
@@ -52,8 +51,7 @@ const data = {
         },
         {
           title: "Manage Categories",
-          url: "#",
-          isActive: true,
+          url: "/dashboard/category",
         }
       ],
     },
@@ -64,7 +62,6 @@ const data = {
         {
           title: "Manage Payment Methods",
           url: "#",
-          isActive: true,
         }
       ],
     },
@@ -102,6 +99,7 @@ const data = {
   ],
 }
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname()
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -134,7 +132,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           <LogoutButton />
                         ) : (
                           <SidebarMenuButton
-                            isActive={item.isActive}
+                            isActive={item.url === pathname}
                             render={<Link href={item.url} />}
                           >
                             {item.title}

@@ -118,14 +118,24 @@ export const inventoryTransactionTypeEnum = pgEnum(
  * ========================================================= */
 
 export const category = pgTable("category", {
-  id: text("id").primaryKey(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+
   name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+
+  createdAt: timestamp("created_at")
+    .defaultNow()
+    .notNull(),
+
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
 });
+
+export type InsertCategory = typeof category.$inferInsert;
+export type SelectCategory = typeof category.$inferSelect;
 
 export const product = pgTable(
   "product",
