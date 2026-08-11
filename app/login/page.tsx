@@ -1,5 +1,5 @@
 import { LoginForm } from "@/components/auth/login-form"
-import { GalleryVerticalEndIcon } from "lucide-react"
+import { ShoppingBag } from "lucide-react"
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
@@ -17,9 +17,9 @@ export default async function LoginPage() {
       <div className="flex w-full max-w-sm flex-col gap-6">
         <a href="#" className="flex items-center gap-2 self-center font-medium">
           <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <GalleryVerticalEndIcon className="size-4" />
+            <ShoppingBag className="size-4" />
           </div>
-          Acme Inc.
+          Point of Sale
         </a>
         <LoginForm />
       </div>
