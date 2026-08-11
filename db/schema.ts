@@ -140,7 +140,9 @@ export type SelectCategory = typeof category.$inferSelect;
 export const product = pgTable(
   "product",
   {
-    id: text("id").primaryKey(),
+    id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
     categoryId: text("category_id")
       .notNull()
       .references(() => category.id),
@@ -163,7 +165,9 @@ export const product = pgTable(
 export const productVariant = pgTable(
   "product_variant",
   {
-    id: text("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     productId: text("product_id")
       .notNull()
       .references(() => product.id, { onDelete: "cascade" }),
@@ -199,7 +203,9 @@ export const productVariant = pgTable(
  * ========================================================= */
 
 export const warehouse = pgTable("warehouse", {
-  id: text("id").primaryKey(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
   address: text("address"),
@@ -219,7 +225,9 @@ export const warehouse = pgTable("warehouse", {
 export const inventoryStock = pgTable(
   "inventory_stock",
   {
-    id: text("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
 
     warehouseId: text("warehouse_id")
       .notNull()
@@ -245,7 +253,9 @@ export const inventoryStock = pgTable(
 export const inventoryTransaction = pgTable(
   "inventory_transaction",
   {
-    id: text("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
 
     warehouseId: text("warehouse_id")
       .notNull()
@@ -287,7 +297,9 @@ export const inventoryTransaction = pgTable(
 export const sale = pgTable(
   "sale",
   {
-    id: text("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
 
     invoiceNumber: text("invoice_number").notNull().unique(),
 
@@ -340,7 +352,9 @@ export const sale = pgTable(
 export const saleItem = pgTable(
   "sale_item",
   {
-    id: text("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
 
     saleId: text("sale_id")
       .notNull()
@@ -382,7 +396,9 @@ export const saleItem = pgTable(
 export const payment = pgTable(
   "payment",
   {
-    id: text("id").primaryKey(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
 
     saleId: text("sale_id")
       .notNull()
