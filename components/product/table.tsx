@@ -1,9 +1,9 @@
 "use client"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import * as z from "zod"
-import ProductDialogForm from "./dialog-form"
+import ProductDialogForm, { type ProductFormValues } from "./dialog-form"
 
 import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,15 @@ import { createProduct, deleteProduct, updateProduct } from "@/lib/actions/produ
 
 type ProductRow = SelectProduct & {
   categoryName?: string | null
+  variants?: Array<{
+    id: string
+    productId: string
+    sku: string
+    name: string
+    costPrice: string
+    sellingPrice: string
+    isActive: boolean
+  }>
 }
 
 type ProductTableProps = {
@@ -29,14 +38,22 @@ type ProductTableProps = {
   initialCategories: SelectCategory[]
 }
 
+const variantSchema = z.object({
+  id: z.string().optional(),
+  sku: z.string().trim().min(1, "SKU is required."),
+  name: z.string().trim().min(1, "Variant name is required."),
+  costPrice: z.string().min(1, "Cost price is required."),
+  sellingPrice: z.string().min(1, "Selling price is required."),
+  isActive: z.boolean().default(true),
+})
+
 const productSchema = z.object({
   name: z.string().trim().min(1, "Product name is required."),
   categoryId: z.string().min(1, "Please select a category."),
   description: z.string(),
   isActive: z.boolean(),
+  variants: z.array(variantSchema),
 })
-
-type ProductFormValues = z.infer<typeof productSchema>
 
 export function ProductTable({ initialProducts, initialCategories }: ProductTableProps) {
   const [products, setProducts] = useState<ProductRow[]>(initialProducts)
@@ -52,15 +69,24 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
     handleSubmit,
     reset,
     formState: { isSubmitting },
-  } = useForm<ProductFormValues, unknown, ProductFormValues>({
-    resolver: zodResolver(productSchema),
+    watch,
+  } = useForm<ProductFormValues>({
+    resolver: zodResolver(productSchema as never),
     defaultValues: {
       name: "",
       categoryId: "",
       description: "",
       isActive: true,
+      variants: [{ sku: "", name: "", costPrice: "", sellingPrice: "", isActive: true }],
     },
   })
+
+  const { append, remove } = useFieldArray({
+    control,
+    name: "variants",
+  })
+
+  const variants = watch("variants") ?? []
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -95,12 +121,24 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
   const resetModal = () => {
     setDialogOpen(false)
     setSelectedProduct(null)
-    reset({ name: "", categoryId: "", description: "", isActive: true })
+    reset({
+      name: "",
+      categoryId: "",
+      description: "",
+      isActive: true,
+      variants: [{ sku: "", name: "", costPrice: "", sellingPrice: "", isActive: true }],
+    })
   }
 
   const openCreateModal = () => {
     setSelectedProduct(null)
-    reset({ name: "", categoryId: "", description: "", isActive: true })
+    reset({
+      name: "",
+      categoryId: "",
+      description: "",
+      isActive: true,
+      variants: [{ sku: "", name: "", costPrice: "", sellingPrice: "", isActive: true }],
+    })
     setDialogOpen(true)
   }
 
@@ -111,19 +149,40 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
       categoryId: product.categoryId,
       description: product.description ?? "",
       isActive: product.isActive,
+      variants: (product.variants ?? []).map((variant) => ({
+        id: variant.id,
+        sku: variant.sku,
+        name: variant.name,
+        costPrice: variant.costPrice,
+        sellingPrice: variant.sellingPrice,
+        isActive: variant.isActive,
+      })),
     })
     setDialogOpen(true)
   }
 
   const onSubmit = async (values: ProductFormValues) => {
     try {
+      const variantsPayload = (values.variants ?? []).map((variant) => ({
+        id: variant.id,
+        sku: variant.sku,
+        name: variant.name,
+        costPrice: variant.costPrice,
+        sellingPrice: variant.sellingPrice,
+        isActive: variant.isActive,
+      }))
+
       if (selectedProduct) {
-        const updatedProduct = await updateProduct(selectedProduct.id, {
-          name: values.name,
-          categoryId: values.categoryId,
-          description: values.description || null,
-          isActive: values.isActive,
-        })
+        const updatedProduct = await updateProduct(
+          selectedProduct.id,
+          {
+            name: values.name,
+            categoryId: values.categoryId,
+            description: values.description || null,
+            isActive: values.isActive,
+          },
+          variantsPayload,
+        )
 
         const categoryName =
           categories.find((category) => category.id === values.categoryId)?.name ?? null
@@ -133,30 +192,54 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
             product.id === selectedProduct.id
               ? {
                 ...product,
-                name: updatedProduct?.name ?? values.name,
+                name: updatedProduct?.product?.name ?? values.name,
                 categoryId: values.categoryId,
                 description: values.description || null,
                 isActive: values.isActive,
                 categoryName,
+                variants: updatedProduct?.variants?.map((variant) => ({
+                  id: variant.id,
+                  productId: variant.productId,
+                  sku: variant.sku,
+                  name: variant.name,
+                  costPrice: String(variant.costPrice),
+                  sellingPrice: String(variant.sellingPrice),
+                  isActive: variant.isActive,
+                })),
               }
               : product
           )
         )
         toast.success("Product updated")
       } else {
-        const createdProduct = await createProduct({
-          name: values.name,
-          categoryId: values.categoryId,
-          description: values.description || null,
-          isActive: values.isActive,
-        })
+        const createdResult = await createProduct(
+          {
+            name: values.name,
+            categoryId: values.categoryId,
+            description: values.description || null,
+            isActive: values.isActive,
+          },
+          variantsPayload,
+        )
 
         const categoryName =
           categories.find((category) => category.id === values.categoryId)?.name ?? null
 
-        if (createdProduct) {
+        if (createdResult) {
           setProducts((currentProducts) => [
-            { ...createdProduct, categoryName } as ProductRow,
+            {
+              ...createdResult.product,
+              categoryName,
+              variants: createdResult.variants.map((variant) => ({
+                id: variant.id,
+                productId: variant.productId,
+                sku: variant.sku,
+                name: variant.name,
+                costPrice: String(variant.costPrice),
+                sellingPrice: String(variant.sellingPrice),
+                isActive: variant.isActive,
+              })),
+            } as ProductRow,
             ...currentProducts,
           ])
         }
@@ -229,6 +312,9 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
           handleSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           openCreateModal={openCreateModal}
+          variants={variants}
+          appendVariant={() => append({ sku: "", name: "", costPrice: "", sellingPrice: "", isActive: true })}
+          removeVariant={(index) => remove(index)}
         />
       </div>
 
@@ -238,6 +324,7 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Variants</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-32 text-right">Actions</TableHead>
             </TableRow>
@@ -248,6 +335,9 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.categoryName ?? "—"}</TableCell>
+                  <TableCell>
+                    {product.variants?.length ? product.variants.map((variant) => variant.sku).join(", ") : "—"}
+                  </TableCell>
                   <TableCell>{product.isActive ? "Active" : "Inactive"}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -263,7 +353,7 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
                   No products found.
                 </TableCell>
               </TableRow>
