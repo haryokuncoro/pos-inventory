@@ -25,6 +25,7 @@ type ProductRow = SelectProduct & {
   variants?: Array<{
     id: string
     productId: string
+    stockQuantity: number
     sku: string
     name: string
     costPrice: string
@@ -41,6 +42,7 @@ type ProductTableProps = {
 const variantSchema = z.object({
   id: z.string().optional(),
   sku: z.string().trim().min(1, "SKU is required."),
+  stockQuantity: z.number().min(0, "Stock quantity cannot be negative."),
   name: z.string().trim().min(1, "Variant name is required."),
   costPrice: z.string().min(1, "Cost price is required."),
   sellingPrice: z.string().min(1, "Selling price is required."),
@@ -152,6 +154,7 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
       variants: (product.variants ?? []).map((variant) => ({
         id: variant.id,
         sku: variant.sku,
+        stockQuantity: variant.stockQuantity,
         name: variant.name,
         costPrice: variant.costPrice,
         sellingPrice: variant.sellingPrice,
@@ -166,6 +169,7 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
       const variantsPayload = (values.variants ?? []).map((variant) => ({
         id: variant.id,
         sku: variant.sku,
+        stockQuantity: variant.stockQuantity,
         name: variant.name,
         costPrice: variant.costPrice,
         sellingPrice: variant.sellingPrice,
@@ -201,6 +205,7 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
                   id: variant.id,
                   productId: variant.productId,
                   sku: variant.sku,
+                  stockQuantity: variant.stockQuantity,
                   name: variant.name,
                   costPrice: String(variant.costPrice),
                   sellingPrice: String(variant.sellingPrice),
@@ -234,6 +239,7 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
                 id: variant.id,
                 productId: variant.productId,
                 sku: variant.sku,
+                stockQuantity: variant.stockQuantity,
                 name: variant.name,
                 costPrice: String(variant.costPrice),
                 sellingPrice: String(variant.sellingPrice),

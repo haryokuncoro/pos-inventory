@@ -46,6 +46,7 @@ export type ProductWithCategoryAndVariants = {
     name: string;
     costPrice: string;
     sellingPrice: string;
+    stockQuantity: number;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -81,6 +82,7 @@ export async function getAllProducts(): Promise<
         name: productVariant.name,
         costPrice: productVariant.costPrice,
         sellingPrice: productVariant.sellingPrice,
+        stockQuantity: productVariant.stockQuantity,
         isActive: productVariant.isActive,
         createdAt: productVariant.createdAt,
         updatedAt: productVariant.updatedAt,

@@ -18,6 +18,7 @@ export type ProductVariantFormValues = {
   id?: string
   sku: string
   name: string
+  stockQuantity: number
   costPrice: string
   sellingPrice: string
   isActive: boolean
@@ -151,7 +152,7 @@ export default function ProductDialogForm({
               )}
             />
           </div>
-
+         
           <div className="flex items-center gap-2">
             <Controller
               name="isActive"
@@ -201,6 +202,28 @@ export default function ProductDialogForm({
                             <Input
                               id={`variant-sku-${index}`}
                               placeholder="SKU"
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                            {fieldState.error ? (
+                              <p className="text-sm text-destructive">{fieldState.error.message}</p>
+                            ) : null}
+                          </div>
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`variant-stock-${index}`}>Stock Quantity</Label>
+                      <Controller
+                        name={`variants.${index}.stockQuantity`}
+                        control={control}
+                        rules={{ required: "Stock quantity is required." }}
+                        render={({ field, fieldState }) => (
+                          <div className="space-y-1">
+                            <Input
+                              id={`variant-stock-${index}`}
+                              type="number"
+                              placeholder="Stock quantity"
                               value={field.value}
                               onChange={field.onChange}
                             />
