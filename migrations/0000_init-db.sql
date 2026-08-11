@@ -18,7 +18,7 @@ CREATE TABLE "account" (
 );
 --> statement-breakpoint
 CREATE TABLE "category" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -26,37 +26,41 @@ CREATE TABLE "category" (
 );
 --> statement-breakpoint
 CREATE TABLE "inventory_stock" (
-	"id" text PRIMARY KEY NOT NULL,
-	"warehouse_id" text NOT NULL,
-	"variant_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"warehouse_id" uuid NOT NULL,
+	"variant_id" uuid NOT NULL,
 	"quantity" integer DEFAULT 0 NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "inventoryStock_warehouse_variant_unique" UNIQUE("warehouse_id","variant_id"),
+	CONSTRAINT "inventoryStock_quantity_nonnegative" CHECK ("inventory_stock"."quantity" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "inventory_transaction" (
-	"id" text PRIMARY KEY NOT NULL,
-	"warehouse_id" text NOT NULL,
-	"variant_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"warehouse_id" uuid NOT NULL,
+	"variant_id" uuid NOT NULL,
 	"type" "inventory_transaction_type" NOT NULL,
 	"quantity" integer NOT NULL,
 	"reference_type" text,
 	"reference_id" text,
 	"reason" text,
 	"created_by" text NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "inventoryTransaction_quantity_nonzero" CHECK ("inventory_transaction"."quantity" <> 0)
 );
 --> statement-breakpoint
 CREATE TABLE "payment" (
-	"id" text PRIMARY KEY NOT NULL,
-	"sale_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"sale_id" uuid NOT NULL,
 	"method" "payment_method" NOT NULL,
 	"amount" numeric(15, 2) NOT NULL,
-	"paid_at" timestamp DEFAULT now() NOT NULL
+	"paid_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "payment_amount_positive" CHECK ("payment"."amount" > 0)
 );
 --> statement-breakpoint
 CREATE TABLE "product" (
-	"id" text PRIMARY KEY NOT NULL,
-	"category_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"category_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
 	"is_active" boolean DEFAULT true NOT NULL,
@@ -65,8 +69,8 @@ CREATE TABLE "product" (
 );
 --> statement-breakpoint
 CREATE TABLE "product_variant" (
-	"id" text PRIMARY KEY NOT NULL,
-	"product_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"product_id" uuid NOT NULL,
 	"sku" text NOT NULL,
 	"name" text NOT NULL,
 	"cost_price" numeric(15, 2) NOT NULL,
@@ -74,13 +78,15 @@ CREATE TABLE "product_variant" (
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "product_variant_sku_unique" UNIQUE("sku")
+	CONSTRAINT "product_variant_sku_unique" UNIQUE("sku"),
+	CONSTRAINT "productVariant_costPrice_nonnegative" CHECK ("product_variant"."cost_price" >= 0),
+	CONSTRAINT "productVariant_sellingPrice_nonnegative" CHECK ("product_variant"."selling_price" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "sale" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"invoice_number" text NOT NULL,
-	"warehouse_id" text NOT NULL,
+	"warehouse_id" uuid NOT NULL,
 	"cashier_id" text NOT NULL,
 	"subtotal" numeric(15, 2) NOT NULL,
 	"discount_amount" numeric(15, 2) DEFAULT '0' NOT NULL,
@@ -89,17 +95,25 @@ CREATE TABLE "sale" (
 	"status" "sale_status" DEFAULT 'COMPLETED' NOT NULL,
 	"sold_at" timestamp DEFAULT now() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "sale_invoice_number_unique" UNIQUE("invoice_number")
+	CONSTRAINT "sale_invoice_number_unique" UNIQUE("invoice_number"),
+	CONSTRAINT "sale_subtotal_nonnegative" CHECK ("sale"."subtotal" >= 0),
+	CONSTRAINT "sale_discountAmount_nonnegative" CHECK ("sale"."discount_amount" >= 0),
+	CONSTRAINT "sale_taxAmount_nonnegative" CHECK ("sale"."tax_amount" >= 0),
+	CONSTRAINT "sale_totalAmount_nonnegative" CHECK ("sale"."total_amount" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "sale_item" (
-	"id" text PRIMARY KEY NOT NULL,
-	"sale_id" text NOT NULL,
-	"variant_id" text NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"sale_id" uuid NOT NULL,
+	"variant_id" uuid NOT NULL,
 	"quantity" integer NOT NULL,
 	"unit_price" numeric(15, 2) NOT NULL,
 	"discount_amount" numeric(15, 2) DEFAULT '0' NOT NULL,
-	"subtotal" numeric(15, 2) NOT NULL
+	"subtotal" numeric(15, 2) NOT NULL,
+	CONSTRAINT "saleItem_quantity_positive" CHECK ("sale_item"."quantity" > 0),
+	CONSTRAINT "saleItem_unitPrice_nonnegative" CHECK ("sale_item"."unit_price" >= 0),
+	CONSTRAINT "saleItem_discountAmount_nonnegative" CHECK ("sale_item"."discount_amount" >= 0),
+	CONSTRAINT "saleItem_subtotal_nonnegative" CHECK ("sale_item"."subtotal" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "session" (
@@ -135,7 +149,7 @@ CREATE TABLE "verification" (
 );
 --> statement-breakpoint
 CREATE TABLE "warehouse" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"code" text NOT NULL,
 	"name" text NOT NULL,
 	"address" text,

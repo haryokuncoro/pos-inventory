@@ -1,5 +1,5 @@
 {
-  "id": "6bb293e8-c0ea-4e3c-a613-f30cc528f616",
+  "id": "dcf6cc9d-29d3-4af4-954a-29eb254d57ba",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -132,9 +132,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "name": {
           "name": "name",
@@ -179,19 +180,20 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "warehouse_id": {
           "name": "warehouse_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "variant_id": {
           "name": "variant_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -271,9 +273,23 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "inventoryStock_warehouse_variant_unique": {
+          "name": "inventoryStock_warehouse_variant_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "warehouse_id",
+            "variant_id"
+          ]
+        }
+      },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "inventoryStock_quantity_nonnegative": {
+          "name": "inventoryStock_quantity_nonnegative",
+          "value": "\"inventory_stock\".\"quantity\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.inventory_transaction": {
@@ -282,19 +298,20 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "warehouse_id": {
           "name": "warehouse_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "variant_id": {
           "name": "variant_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -440,7 +457,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "inventoryTransaction_quantity_nonzero": {
+          "name": "inventoryTransaction_quantity_nonzero",
+          "value": "\"inventory_transaction\".\"quantity\" <> 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.payment": {
@@ -449,13 +471,14 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "sale_id": {
           "name": "sale_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -515,7 +538,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "payment_amount_positive": {
+          "name": "payment_amount_positive",
+          "value": "\"payment\".\"amount\" > 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.product": {
@@ -524,13 +552,14 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "category_id": {
           "name": "category_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -612,13 +641,14 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "product_id": {
           "name": "product_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -711,7 +741,16 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "productVariant_costPrice_nonnegative": {
+          "name": "productVariant_costPrice_nonnegative",
+          "value": "\"product_variant\".\"cost_price\" >= 0"
+        },
+        "productVariant_sellingPrice_nonnegative": {
+          "name": "productVariant_sellingPrice_nonnegative",
+          "value": "\"product_variant\".\"selling_price\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.sale": {
@@ -720,9 +759,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "invoice_number": {
           "name": "invoice_number",
@@ -732,7 +772,7 @@
         },
         "warehouse_id": {
           "name": "warehouse_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -877,7 +917,24 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "sale_subtotal_nonnegative": {
+          "name": "sale_subtotal_nonnegative",
+          "value": "\"sale\".\"subtotal\" >= 0"
+        },
+        "sale_discountAmount_nonnegative": {
+          "name": "sale_discountAmount_nonnegative",
+          "value": "\"sale\".\"discount_amount\" >= 0"
+        },
+        "sale_taxAmount_nonnegative": {
+          "name": "sale_taxAmount_nonnegative",
+          "value": "\"sale\".\"tax_amount\" >= 0"
+        },
+        "sale_totalAmount_nonnegative": {
+          "name": "sale_totalAmount_nonnegative",
+          "value": "\"sale\".\"total_amount\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.sale_item": {
@@ -886,19 +943,20 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "sale_id": {
           "name": "sale_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
         "variant_id": {
           "name": "variant_id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -991,7 +1049,24 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "saleItem_quantity_positive": {
+          "name": "saleItem_quantity_positive",
+          "value": "\"sale_item\".\"quantity\" > 0"
+        },
+        "saleItem_unitPrice_nonnegative": {
+          "name": "saleItem_unitPrice_nonnegative",
+          "value": "\"sale_item\".\"unit_price\" >= 0"
+        },
+        "saleItem_discountAmount_nonnegative": {
+          "name": "saleItem_discountAmount_nonnegative",
+          "value": "\"sale_item\".\"discount_amount\" >= 0"
+        },
+        "saleItem_subtotal_nonnegative": {
+          "name": "saleItem_subtotal_nonnegative",
+          "value": "\"sale_item\".\"subtotal\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.session": {
@@ -1233,9 +1308,10 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
         "code": {
           "name": "code",
