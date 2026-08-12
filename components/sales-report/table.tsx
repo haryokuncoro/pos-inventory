@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -14,7 +15,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatRupiah } from "@/lib/helper"
-import { Separator } from "@base-ui/react"
 
 type SaleRow = {
   id: string
@@ -49,6 +49,10 @@ function toDateLabel(value: Date | string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date)
+}
+
+function toNumber(amount: string | number) {
+  return Number(amount) || 0
 }
 
 export function SalesReportTable({ initialSales }: SaleTableProps) {
@@ -105,6 +109,42 @@ export function SalesReportTable({ initialSales }: SaleTableProps) {
     return filteredSales.slice(startIndex, startIndex + pageSize)
   }, [filteredSales, pageSize, safePage])
 
+  const aggregates = useMemo(() => {
+    return filteredSales.reduce(
+      (summary, sale) => {
+        const subtotal = toNumber(sale.subtotal)
+        const discount = toNumber(sale.discountAmount)
+        const tax = toNumber(sale.taxAmount)
+        const total = toNumber(sale.totalAmount)
+
+        summary.transactions += 1
+
+        if (sale.status === "COMPLETED") {
+          summary.completedTransactions += 1
+          summary.subtotal += subtotal
+          summary.discount += discount
+          summary.tax += tax
+          summary.total += total
+          return summary
+        }
+
+        summary.voidedTransactions += 1
+        summary.voidedTotal += total
+        return summary
+      },
+      {
+        transactions: 0,
+        completedTransactions: 0,
+        voidedTransactions: 0,
+        subtotal: 0,
+        discount: 0,
+        tax: 0,
+        total: 0,
+        voidedTotal: 0,
+      }
+    )
+  }, [filteredSales])
+
   return (
     <div className="space-y-4 p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -152,27 +192,27 @@ export function SalesReportTable({ initialSales }: SaleTableProps) {
                 className="w-[150px]"
               />
             </div>
-            
+
           </div>
           <div className="flex items-center gap-2 text-sm">
-           <Button
-                type="button"
-              
-                size="sm"
-                onClick={() => {
-                  setStartDate("")
-                  setEndDate("")
-                  setPage(1)
-                }}
-                disabled={!startDate && !endDate}
-                className="mb-0.5"
-              >
-                Reset
-              </Button>
+            <Button
+              type="button"
+
+              size="sm"
+              onClick={() => {
+                setStartDate("")
+                setEndDate("")
+                setPage(1)
+              }}
+              disabled={!startDate && !endDate}
+              className="mb-0.5"
+            >
+              Reset
+            </Button>
           </div>
         </div>
 
-        
+
         <div className="flex items-center gap-2 text-sm">
           <Label htmlFor="page-size" className="text-sm text-muted-foreground">
             Rows
@@ -191,6 +231,52 @@ export function SalesReportTable({ initialSales }: SaleTableProps) {
             <option value="25">25</option>
           </select>
         </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <Card size="sm" className="ring-1 ring-border">
+          <CardContent className="space-y-1">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Transactions</p>
+            <p className="text-2xl font-semibold">{aggregates.transactions}</p>
+            <p className="text-xs text-muted-foreground">
+              {aggregates.completedTransactions} completed, {aggregates.voidedTransactions} voided
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card size="sm" className="ring-1 ring-border">
+          <CardContent className="space-y-1">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Subtotal</p>
+            <p className="text-2xl font-semibold">{toCurrency(aggregates.subtotal)}</p>
+            <p className="text-xs text-muted-foreground">Completed sales only</p>
+          </CardContent>
+        </Card>
+
+        <Card size="sm" className="ring-1 ring-border">
+          <CardContent className="space-y-1">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Discount</p>
+            <p className="text-2xl font-semibold">{toCurrency(aggregates.discount)}</p>
+            <p className="text-xs text-muted-foreground">Applied to completed sales</p>
+          </CardContent>
+        </Card>
+
+        <Card size="sm" className="ring-1 ring-border">
+          <CardContent className="space-y-1">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Tax</p>
+            <p className="text-2xl font-semibold">{toCurrency(aggregates.tax)}</p>
+            <p className="text-xs text-muted-foreground">Collected from completed sales</p>
+          </CardContent>
+        </Card>
+
+        <Card size="sm" className="ring-1 ring-border">
+          <CardContent className="space-y-1">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Net Total</p>
+            <p className="text-2xl font-semibold">{toCurrency(aggregates.total)}</p>
+            <p className="text-xs text-muted-foreground">
+              Voided value: {toCurrency(aggregates.voidedTotal)}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="overflow-hidden rounded-xl border">
