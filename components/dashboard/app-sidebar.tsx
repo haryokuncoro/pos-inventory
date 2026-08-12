@@ -37,7 +37,7 @@ const data = {
         },
         {
           title: "Sales Report",
-          url: "/dashboard/sales-report",
+          url: "/dashboard/sales/reports",
         },
       ],
     },
