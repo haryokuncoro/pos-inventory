@@ -1,5 +1,5 @@
 "use client"
-
+import GeneralPagination from "@/components/dashboard/pagination"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -15,7 +15,6 @@ import {
 
 import CategoryDialogForm from "./dialog-form"
 import CategoryList from "./list"
-import CategoryPagination from "./pagination"
 import CategoryToolbar from "./toolbar"
 
 const categorySchema = z.object({
@@ -232,7 +231,7 @@ export default function CategoryTable({
         onDelete={handleDelete}
       />
 
-      <CategoryPagination
+      <GeneralPagination
         page={safePage}
         totalPages={totalPages}
         totalItems={filteredCategories.length}

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 
-type CategoryPaginationProps = {
+type GeneralPaginationProps = {
   page: number
   totalPages: number
   totalItems: number
@@ -12,19 +12,19 @@ type CategoryPaginationProps = {
   onNext: () => void
 }
 
-export default function CategoryPagination({
+export default function GeneralPagination({
   page,
   totalPages,
   totalItems,
   currentItems,
   onPrevious,
   onNext,
-}: CategoryPaginationProps) {
+}: GeneralPaginationProps) {
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <p className="text-sm text-muted-foreground">
         Showing {currentItems} of {totalItems}{" "}
-        categories
+        items
       </p>
 
       <div className="flex items-center gap-2">

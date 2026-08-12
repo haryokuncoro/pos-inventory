@@ -11,8 +11,8 @@ import { createProduct, deleteProduct, updateProduct } from "@/lib/actions/produ
 
 import ProductDialogForm from "./dialog-form"
 import ProductList from "./list"
-import ProductPagination from "./pagination"
 import ProductToolbar from "./toolbar"
+import GeneralPagination from "@/components/dashboard/pagination"
 
 const variantSchema = z.object({
   id: z.string().optional(),
@@ -312,7 +312,7 @@ export default function ProductTable({ initialProducts, initialCategories }: Pro
         onDelete={handleDelete}
       />
 
-      <ProductPagination
+      <GeneralPagination
         page={safePage}
         totalPages={totalPages}
         totalItems={filteredProducts.length}

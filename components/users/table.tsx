@@ -15,8 +15,8 @@ import {
 
 import UserDialogForm from "./dialog-form"
 import UserList from "./list"
-import UserPagination from "./pagination"
 import UserToolbar from "./toolbar"
+import GeneralPagination from "@/components/dashboard/pagination"
 
 const userSchema = z.object({
   name: z.string().trim().min(1, "User name is required."),
@@ -212,7 +212,7 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
         onDelete={handleDelete}
       />
 
-      <UserPagination
+      <GeneralPagination
         page={safePage}
         totalPages={totalPages}
         totalItems={filteredUsers.length}
