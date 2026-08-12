@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatRupiah } from "@/lib/helper"
+import { Separator } from "@base-ui/react"
 
 type SaleRow = {
   id: string
@@ -52,24 +53,43 @@ function toDateLabel(value: Date | string) {
 
 export function SalesReportTable({ initialSales }: SaleTableProps) {
   const [query, setQuery] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
   const filteredSales = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
 
-    if (!normalizedQuery) {
-      return initialSales
-    }
+    const startBoundary = startDate ? new Date(`${startDate}T00:00:00`) : null
+    const endBoundary = endDate ? new Date(`${endDate}T23:59:59.999`) : null
 
     return initialSales.filter((row) => {
+      const soldAtDate = row.soldAt instanceof Date ? row.soldAt : new Date(row.soldAt)
+
+      if (Number.isNaN(soldAtDate.getTime())) {
+        return false
+      }
+
+      if (startBoundary && soldAtDate < startBoundary) {
+        return false
+      }
+
+      if (endBoundary && soldAtDate > endBoundary) {
+        return false
+      }
+
+      if (!normalizedQuery) {
+        return true
+      }
+
       return (
         row.invoiceNumber.toLowerCase().includes(normalizedQuery) ||
         row.cashierName.toLowerCase().includes(normalizedQuery) ||
         row.status.toLowerCase().includes(normalizedQuery)
       )
     })
-  }, [initialSales, query])
+  }, [endDate, initialSales, query, startDate])
 
   const totalPages = Math.max(1, Math.ceil(filteredSales.length / pageSize))
   const safePage = Math.min(page, totalPages)
@@ -88,16 +108,71 @@ export function SalesReportTable({ initialSales }: SaleTableProps) {
   return (
     <div className="space-y-4 p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <Input
-          placeholder="Search by invoice, cashier, or status"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value)
-            setPage(1)
-          }}
-          className="max-w-sm"
-        />
+        <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-end md:gap-2">
+          <div className="w-full max-w-sm">
+            <Input
+              placeholder="Search by invoice, cashier, or status"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setPage(1)
+              }}
+            />
+          </div>
 
+          <div className="flex items-center gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="start-date" className="text-xs text-muted-foreground">
+                From
+              </Label>
+              <Input
+                id="start-date"
+                type="date"
+                value={startDate}
+                onChange={(event) => {
+                  setStartDate(event.target.value)
+                  setPage(1)
+                }}
+                className="w-[150px]"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="end-date" className="text-xs text-muted-foreground">
+                To
+              </Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={endDate}
+                onChange={(event) => {
+                  setEndDate(event.target.value)
+                  setPage(1)
+                }}
+                className="w-[150px]"
+              />
+            </div>
+            
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+           <Button
+                type="button"
+              
+                size="sm"
+                onClick={() => {
+                  setStartDate("")
+                  setEndDate("")
+                  setPage(1)
+                }}
+                disabled={!startDate && !endDate}
+                className="mb-0.5"
+              >
+                Reset
+              </Button>
+          </div>
+        </div>
+
+        
         <div className="flex items-center gap-2 text-sm">
           <Label htmlFor="page-size" className="text-sm text-muted-foreground">
             Rows
