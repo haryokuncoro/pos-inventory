@@ -9,8 +9,7 @@
     "lint": "eslint",
     "generate": "npx drizzle-kit generate",
     "migrate": "npx drizzle-kit migrate",
-    "db:seed": "tsx db/seed.ts",
-    "db:seed-products": "tsx db/seed-products.ts"
+    "db:seed": "tsx db/seed.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
