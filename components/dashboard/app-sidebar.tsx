@@ -32,12 +32,12 @@ const data = {
       url: "#",
       items: [
         {
-          title: "POS",
-          url: "/dashboard/pos",
-        },
-        {
           title: "Sales",
           url: "/dashboard/sales",
+        },
+        {
+          title: "Sales Report",
+          url: "/dashboard/sales-report",
         },
       ],
     },
