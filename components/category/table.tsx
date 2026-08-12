@@ -40,7 +40,7 @@ export default function CategoryTable({
 
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5)
+  const [pageSize, setPageSize] = useState(10)
 
   const [selectedCategory, setSelectedCategory] =
     useState<SelectCategory | null>(null)
