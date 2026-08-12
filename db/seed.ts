@@ -8,7 +8,7 @@ import {
 
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
-
+import {auth} from "@/lib/auth";
 /**
  * =========================================================
  * MASTER DATA
@@ -908,12 +908,19 @@ const PRODUCTS = [
 
 const SEED_USERS = [
   {
+    name: "admin",
+    email: "admin@mail.com",
+    isAdmin: true,
+  },
+  {
     name: "Budi Santoso",
     email: "budi.cashier@seed.local",
+    isAdmin: false,
   },
   {
     name: "Siti Aminah",
     email: "siti.cashier@seed.local",
+    isAdmin: false,
   },
 ];
 
@@ -963,19 +970,17 @@ async function seed() {
       continue;
     }
 
-    const [created] = await db
-      .insert(user)
-      .values({
-        id: randomUUID(),
-        name: cashier.name,
-        email: cashier.email,
-        emailVerified: true,
-      })
-      .returning({
-        id: user.id,
-      });
+    const created = await auth.api.createUser({
+    body: {
+            email: cashier.email, 
+            password: "password", 
+            name: cashier.name, 
+            role: cashier.isAdmin ? "admin" : "user",
+            data: { customField: "customValue" },
+        },
+    });
 
-    cashierIds.push(created.id);
+    cashierIds.push(created.user.id);
   }
 
   console.log(
