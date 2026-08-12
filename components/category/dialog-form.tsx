@@ -1,107 +1,149 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+"use client"
+
+import type { Dispatch, SetStateAction } from "react"
+import type { UseFormReturn } from "react-hook-form"
 import { Controller } from "react-hook-form"
-import type * as ReactHookForm from "react-hook-form"
+
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+
 import type { SelectCategory } from "@/db/schema"
 
-type CategoryFormValues = {
-  name: string
-}
+import type { CategoryFormValues } from "./table"
 
 type CategoryDialogFormProps = {
+  form: UseFormReturn<CategoryFormValues>
+
   selectedCategory: SelectCategory | null
-  dialogOpen: boolean
-  setDialogOpen: (open: boolean) => void
-  resetModal: () => void
-  onSubmit: (data: CategoryFormValues) => void
-  control: ReactHookForm.Control<CategoryFormValues>
-  handleSubmit: ReactHookForm.UseFormHandleSubmit<CategoryFormValues>
-  isSubmitting: boolean
-  openCreateModal: () => void
+
+  open: boolean
+  onOpenChange: Dispatch<SetStateAction<boolean>>
+
+  onClose: () => void
+  onCreate: () => void
+
+  onSubmit: (
+    values: CategoryFormValues
+  ) => Promise<void>
 }
 
 export default function CategoryDialogForm({
+  form,
   selectedCategory,
-  dialogOpen,
-  setDialogOpen,
-  resetModal,
+  open,
+  onOpenChange,
+  onClose,
+  onCreate,
   onSubmit,
-  control,
-  handleSubmit,
-  isSubmitting,
-  openCreateModal,
 }: CategoryDialogFormProps) {
-    return (
-        <>
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-        setDialogOpen(open)
-        if (!open) {
-          resetModal()
+  const isEdit = Boolean(selectedCategory)
+
+  const isSubmitting =
+    form.formState.isSubmitting
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        onOpenChange(value)
+
+        if (!value) {
+          onClose()
         }
-      }}>
-        <DialogTrigger
-          render={<Button onClick={openCreateModal}>Add category</Button>}
-        />
+      }}
+    >
+     
+        <DialogTrigger  onClick={onCreate} render={<Button variant="outline">
+          Add category
+        </Button>} />
 
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{selectedCategory ? "Update category" : "Create category"}</DialogTitle>
-            <DialogDescription>
-              {selectedCategory
-                ? "Update the category name below."
-                : "Create a new product category for your inventory."}
-            </DialogDescription>
-          </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="category-name">Name</Label>
-              <Controller
-                name="name"
-                control={control}
-                rules={{ required: "Category name is required." }}
-                render={({ field, fieldState }) => (
-                  <div className="space-y-1">
-                    <Input
-                      id="category-name"
-                      placeholder="Enter category name"
-                      value={field.value}
-                      onChange={field.onChange}
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {isEdit
+              ? "Update category"
+              : "Create category"}
+          </DialogTitle>
+
+          <DialogDescription>
+            {isEdit
+              ? "Update the category name below."
+              : "Create a new product category for your inventory."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          id="category-form"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <FieldGroup>
+            <Controller
+              name="name"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field
+                  data-invalid={fieldState.invalid}
+                >
+                  <FieldLabel htmlFor="category-form-name">
+                    Name
+                  </FieldLabel>
+
+                  <Input
+                    {...field}
+                    id="category-form-name"
+                    placeholder="Enter category name"
+                    autoComplete="off"
+                    aria-invalid={fieldState.invalid}
+                  />
+
+                  {fieldState.invalid && (
+                    <FieldError
+                      errors={[fieldState.error]}
                     />
-                    {fieldState.error ? (
-                      <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                    ) : null}
-                  </div>
-                )}
-              />
-            </div>
+                  )}
+                </Field>
+              )}
+            />
+          </FieldGroup>
+        </form>
 
-            <DialogFooter>
-              <DialogClose
-                render={
-                  <Button type="button" variant="outline">
-                    Cancel
-                  </Button>
-                }
-              />
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : selectedCategory ? "Save changes" : "Create"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-        </>
-    )
+        <DialogFooter>
+          <DialogClose
+            disabled={isSubmitting}
+          >
+            Cancel
+          </DialogClose>
+
+          <Button
+            type="submit"
+            form="category-form"
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? "Saving..."
+              : isEdit
+                ? "Save changes"
+                : "Create"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }

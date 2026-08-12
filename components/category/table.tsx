@@ -1,22 +1,11 @@
 "use client"
-import { zodResolver } from "@hookform/resolvers/zod"
-import {  useForm } from "react-hook-form"
-import { toast } from "sonner"
-import * as z from "zod"
-import CategoryDialogForm from "./dialog-form"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { useForm } from "react-hook-form"
+import { toast } from "sonner"
+import { z } from "zod"
+
 import type { SelectCategory } from "@/db/schema"
 import {
   createCategory,
@@ -24,32 +13,46 @@ import {
   updateCategory,
 } from "@/lib/actions/categories"
 
+import CategoryDialogForm from "./dialog-form"
+import CategoryList from "./list"
+import CategoryPagination from "./pagination"
+import CategoryToolbar from "./toolbar"
+
+const categorySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Category name is required."),
+})
+
+export type CategoryFormValues = z.infer<
+  typeof categorySchema
+>
+
 type CategoryTableProps = {
   initialCategories: SelectCategory[]
 }
 
-const categorySchema = z.object({
-  name: z.string().trim().min(1, "Category name is required."),
-})
+export default function CategoryTable({
+  initialCategories,
+}: CategoryTableProps) {
+  const [categories, setCategories] =
+    useState<SelectCategory[]>(initialCategories)
 
-type CategoryFormValues = z.infer<typeof categorySchema>
-
-export function CategoryTable({ initialCategories }: CategoryTableProps) {
-  const [categories, setCategories] = useState<SelectCategory[]>(initialCategories)
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
-  const [selectedCategory, setSelectedCategory] = useState<SelectCategory | null>(null)
+
+  const [selectedCategory, setSelectedCategory] =
+    useState<SelectCategory | null>(null)
+
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { isSubmitting },
-  } = useForm<CategoryFormValues>({
+  const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
-    defaultValues: { name: "" },
+    defaultValues: {
+      name: "",
+    },
   })
 
   const filteredCategories = useMemo(() => {
@@ -60,11 +63,17 @@ export function CategoryTable({ initialCategories }: CategoryTableProps) {
     }
 
     return categories.filter((category) =>
-      category.name.toLowerCase().includes(normalizedQuery)
+      category.name
+        .toLowerCase()
+        .includes(normalizedQuery)
     )
   }, [categories, query])
 
-  const totalPages = Math.max(1, Math.ceil(filteredCategories.length / pageSize))
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredCategories.length / pageSize)
+  )
+
   const safePage = Math.min(page, totalPages)
 
   useEffect(() => {
@@ -75,177 +84,170 @@ export function CategoryTable({ initialCategories }: CategoryTableProps) {
 
   const pagedCategories = useMemo(() => {
     const startIndex = (safePage - 1) * pageSize
-    return filteredCategories.slice(startIndex, startIndex + pageSize)
-  }, [filteredCategories, pageSize, safePage])
 
-  const resetModal = () => {
-    setDialogOpen(false)
-    setSelectedCategory(null)
-    reset({ name: "" })
-  }
+    return filteredCategories.slice(
+      startIndex,
+      startIndex + pageSize
+    )
+  }, [filteredCategories, pageSize, safePage])
 
   const openCreateModal = () => {
     setSelectedCategory(null)
-    reset({ name: "" })
+
+    form.reset({
+      name: "",
+    })
+
     setDialogOpen(true)
   }
 
   const openEditModal = (category: SelectCategory) => {
     setSelectedCategory(category)
-    reset({ name: category.name })
+
+    form.reset({
+      name: category.name,
+    })
+
     setDialogOpen(true)
   }
 
-  const onSubmit = async (values: CategoryFormValues) => {
+  const closeModal = () => {
+    setDialogOpen(false)
+    setSelectedCategory(null)
+
+    form.reset({
+      name: "",
+    })
+  }
+
+  const handleSubmit = async (
+    values: CategoryFormValues
+  ) => {
     try {
       if (selectedCategory) {
-        const updatedCategory = await updateCategory(selectedCategory.id, {
-          name: values.name,
-        })
+        const updatedCategory = await updateCategory(
+          selectedCategory.id,
+          {
+            name: values.name,
+          }
+        )
 
-        setCategories((currentCategories) =>
-          currentCategories.map((category) =>
+        setCategories((current) =>
+          current.map((category) =>
             category.id === selectedCategory.id
-              ? { ...category, name: updatedCategory?.name ?? values.name }
+              ? {
+                  ...category,
+                  name:
+                    updatedCategory?.name ??
+                    values.name,
+                }
               : category
           )
         )
+
         toast.success("Category updated")
       } else {
-        const createdCategory = await createCategory({ name: values.name })
+        const createdCategory = await createCategory({
+          name: values.name,
+        })
 
         if (createdCategory) {
-          setCategories((currentCategories) => [createdCategory, ...currentCategories])
+          setCategories((current) => [
+            createdCategory,
+            ...current,
+          ])
         }
+
         toast.success("Category created")
       }
 
-      resetModal()
+      closeModal()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save category.")
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save category."
+      )
     }
   }
 
   const handleDelete = async (categoryId: string) => {
-    const confirmed = window.confirm("Delete this category?")
+    const confirmed = window.confirm(
+      "Delete this category?"
+    )
+
     if (!confirmed) {
       return
     }
 
     try {
       await deleteCategory(categoryId)
-      setCategories((currentCategories) =>
-        currentCategories.filter((category) => category.id !== categoryId)
+
+      setCategories((current) =>
+        current.filter(
+          (category) => category.id !== categoryId
+        )
       )
+
       toast.success("Category deleted")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to delete category.")
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to delete category."
+      )
     }
   }
 
   return (
     <div className="space-y-4 p-4">
-     
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <Input
-          placeholder="Search by name"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value)
-            setPage(1)
-          }}
-          className="max-w-sm"
-        />
-
-        <div className="flex items-center gap-2 text-sm">
-          <Label htmlFor="page-size" className="text-sm text-muted-foreground">
-            Rows
-          </Label>
-          <select
-            id="page-size"
-            className="h-9 rounded-4xl border border-input bg-input/30 px-3 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
-              setPage(1)
-            }}
-          >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="25">25</option>
-          </select>
-        </div>
-      </div>
+      <CategoryToolbar
+        query={query}
+        pageSize={pageSize}
+        onQueryChange={(value) => {
+          setQuery(value)
+          setPage(1)
+        }}
+        onPageSizeChange={(value) => {
+          setPageSize(value)
+          setPage(1)
+        }}
+      />
 
       <div className="flex justify-end">
-          <CategoryDialogForm
-              selectedCategory={selectedCategory}
-              dialogOpen={dialogOpen}
-              setDialogOpen={setDialogOpen}
-              resetModal={resetModal}
-              onSubmit={onSubmit}
-              control={control}
-              handleSubmit={handleSubmit}
-              isSubmitting={isSubmitting}
-              openCreateModal={openCreateModal}
-            />
-        </div>
-
-      <div className="overflow-hidden rounded-xl border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead className="w-32 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pagedCategories.length > 0 ? (
-              pagedCategories.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEditModal(category)}>
-                        Edit
-                      </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDelete(category.id)}>
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={2} className="py-6 text-center text-sm text-muted-foreground">
-                  No categories found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+        <CategoryDialogForm
+          form={form}
+          selectedCategory={selectedCategory}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onClose={closeModal}
+          onCreate={openCreateModal}
+          onSubmit={handleSubmit}
+        />
       </div>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {pagedCategories.length} of {filteredCategories.length} categories
-        </p>
+      <CategoryList
+        categories={pagedCategories}
+        onEdit={openEditModal}
+        onDelete={handleDelete}
+      />
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage((currentPage) => Math.max(currentPage - 1, 1))} disabled={safePage === 1}>
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {safePage} of {totalPages}
-          </span>
-          <Button variant="outline" size="sm" onClick={() => setPage((currentPage) => Math.min(currentPage + 1, totalPages))} disabled={safePage === totalPages}>
-            Next
-          </Button>
-        </div>
-      </div>
-
-      
+      <CategoryPagination
+        page={safePage}
+        totalPages={totalPages}
+        totalItems={filteredCategories.length}
+        currentItems={pagedCategories.length}
+        onPrevious={() =>
+          setPage((current) =>
+            Math.max(current - 1, 1)
+          )
+        }
+        onNext={() =>
+          setPage((current) =>
+            Math.min(current + 1, totalPages)
+          )
+        }
+      />
     </div>
   )
 }
