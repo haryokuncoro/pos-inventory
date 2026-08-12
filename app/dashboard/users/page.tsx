@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
+import { AccessDenied } from "@/components/auth/permission-guard"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,8 +15,17 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import UsersHomePage from "@/components/users/home"
+import { checkPermission } from "@/lib/actions/users"
 
-export default function UsersPage() {
+export default async function UsersPage() {
+  const allowed = await checkPermission({
+    user: ["view"],
+  });
+
+  if (!allowed) {
+    return <AccessDenied />;
+  }
+  
   return (
     <SidebarProvider>
       <AppSidebar />

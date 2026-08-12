@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db/drizzle";
 import { user, InsertUser } from "@/db/schema";
 import { eq } from "drizzle-orm"; 
-
+import { headers } from "next/headers"
 
  export async function signIn(email: string, password: string) {
     try { 
@@ -36,6 +36,24 @@ import { eq } from "drizzle-orm";
         return { success: false, message: "Sign-up failed" };
     }
  }
+
+ export async function checkPermission(permissions: { [key: string]: string[] }) {
+    try {
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        })
+        const hasPermission = await auth.api.userHasPermission({
+            body: {
+                userId: session?.user?.id,
+                permissions: permissions,
+            },
+            });
+        return hasPermission.success;
+    } catch (error) {
+        console.error(error);
+        throw new Error("Failed to check permission");
+    }
+}
 
 
 type CreateUserInput = {
