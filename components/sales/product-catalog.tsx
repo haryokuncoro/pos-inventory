@@ -34,15 +34,7 @@ export function ProductCatalog({
         <section className="flex min-w-0 flex-1 flex-col gap-4">
             {/* Header */}
             <div className="space-y-4">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Penjualan
-                    </h1>
-
-                    <p className="text-sm text-muted-foreground">
-                        Pilih produk untuk membuat transaksi.
-                    </p>
-                </div>
+                
 
                 {/* Search */}
                 <div className="relative">
