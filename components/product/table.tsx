@@ -1,23 +1,42 @@
 "use client"
-import { toast } from "sonner"
-import ProductDialogForm, { type ProductFormValues } from "./dialog-form"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { useFieldArray, useForm } from "react-hook-form"
+import { toast } from "sonner"
+import { z } from "zod"
+
 import type { SelectCategory, SelectProduct } from "@/db/schema"
 import { createProduct, deleteProduct, updateProduct } from "@/lib/actions/products"
 
-type ProductRow = SelectProduct & {
+import ProductDialogForm from "./dialog-form"
+import ProductList from "./list"
+import ProductPagination from "./pagination"
+import ProductToolbar from "./toolbar"
+
+const variantSchema = z.object({
+  id: z.string().optional(),
+  sku: z.string().trim().min(1, "SKU is required."),
+  name: z.string().trim().min(1, "Variant name is required."),
+  stockQuantity: z.number().min(0, "Stock quantity cannot be negative."),
+  costPrice: z.string().trim().min(1, "Cost price is required."),
+  sellingPrice: z.string().trim().min(1, "Selling price is required."),
+  isActive: z.boolean().default(true),
+})
+
+const productSchema = z.object({
+  name: z.string().trim().min(1, "Product name is required."),
+  categoryId: z.string().min(1, "Please select a category."),
+  description: z.string(),
+  isActive: z.boolean(),
+  variants: z.array(variantSchema).min(1, "At least one variant is required."),
+})
+
+export type ProductVariantFormValues = z.infer<typeof variantSchema>
+
+export type ProductFormValues = z.infer<typeof productSchema>
+
+export type ProductRow = SelectProduct & {
   categoryName?: string | null
   variants?: Array<{
     id: string
@@ -36,14 +55,43 @@ type ProductTableProps = {
   initialCategories: SelectCategory[]
 }
 
-export function ProductTable({ initialProducts, initialCategories }: ProductTableProps) {
+const defaultVariant: ProductVariantFormValues = {
+  sku: "",
+  name: "",
+  stockQuantity: 0,
+  costPrice: "",
+  sellingPrice: "",
+  isActive: true,
+}
+
+const defaultValues: ProductFormValues = {
+  name: "",
+  categoryId: "",
+  description: "",
+  isActive: true,
+  variants: [{ ...defaultVariant }],
+}
+
+export default function ProductTable({ initialProducts, initialCategories }: ProductTableProps) {
   const [products, setProducts] = useState<ProductRow[]>(initialProducts)
   const [categories] = useState<SelectCategory[]>(initialCategories)
+
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
+
   const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(productSchema) as never,
+    defaultValues,
+  })
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "variants",
+  })
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -78,19 +126,45 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
   const resetModal = () => {
     setDialogOpen(false)
     setSelectedProduct(null)
+
+    form.reset(defaultValues)
   }
 
   const openCreateModal = () => {
     setSelectedProduct(null)
+
+    form.reset(defaultValues)
+
     setDialogOpen(true)
   }
 
   const openEditModal = (product: ProductRow) => {
     setSelectedProduct(product)
+
+    const selectedVariants = product.variants?.length
+      ? product.variants
+      : [{ ...defaultVariant }]
+
+    form.reset({
+      name: product.name,
+      categoryId: product.categoryId,
+      description: product.description ?? "",
+      isActive: product.isActive,
+      variants: selectedVariants.map((variant) => ({
+        id: variant.id,
+        sku: variant.sku,
+        name: variant.name,
+        stockQuantity: variant.stockQuantity,
+        costPrice: variant.costPrice,
+        sellingPrice: variant.sellingPrice,
+        isActive: variant.isActive,
+      })),
+    })
+
     setDialogOpen(true)
   }
 
-  const onSubmit = async (values: ProductFormValues) => {
+  const handleSubmit = async (values: ProductFormValues) => {
     try {
       const variantsPayload = (values.variants ?? []).map((variant) => ({
         id: variant.id,
@@ -141,6 +215,8 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
               : product
           )
         )
+
+        toast.success("Product updated")
       } else {
         const createdResult = await createProduct(
           {
@@ -174,11 +250,13 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
             ...currentProducts,
           ])
         }
+
+        toast.success("Product created")
       }
 
       resetModal()
     } catch (error) {
-      throw error
+      toast.error(error instanceof Error ? error.message : "Unable to save product.")
     }
   }
 
@@ -199,120 +277,49 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
 
   return (
     <div className="space-y-4 p-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <Input
-          placeholder="Search by name or category"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value)
-            setPage(1)
-          }}
-          className="max-w-sm"
-        />
-
-        <div className="flex items-center gap-2 text-sm">
-          <Label htmlFor="page-size" className="text-sm text-muted-foreground">
-            Rows
-          </Label>
-          <select
-            id="page-size"
-            className="h-9 rounded-4xl border border-input bg-input/30 px-3 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
-              setPage(1)
-            }}
-          >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="25">25</option>
-          </select>
-        </div>
-      </div>
+      <ProductToolbar
+        query={query}
+        pageSize={pageSize}
+        onQueryChange={(value) => {
+          setQuery(value)
+          setPage(1)
+        }}
+        onPageSizeChange={(value) => {
+          setPageSize(value)
+          setPage(1)
+        }}
+      />
 
       <div className="flex justify-end">
         <ProductDialogForm
+          form={form}
+          variantFields={fields}
           selectedProduct={selectedProduct}
           categories={categories}
-          dialogOpen={dialogOpen}
-          setDialogOpen={setDialogOpen}
-          resetModal={resetModal}
-          onSubmit={onSubmit}
-          openCreateModal={openCreateModal}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onClose={resetModal}
+          onCreate={openCreateModal}
+          onSubmit={handleSubmit}
+          onAppendVariant={() => append({ ...defaultVariant })}
+          onRemoveVariant={remove}
         />
       </div>
 
-      <div className="overflow-hidden rounded-xl border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Variants</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-32 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pagedProducts.length > 0 ? (
-              pagedProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{product.categoryName ?? "—"}</TableCell>
-                  <TableCell>
-                    {product.variants?.length ? product.variants.map((variant) => variant.sku).join(", ") : "—"}
-                  </TableCell>
-                  <TableCell>{product.isActive ? "Active" : "Inactive"}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEditModal(product)}>
-                        Edit
-                      </Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDelete(product.id)}>
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">
-                  No products found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <ProductList
+        products={pagedProducts}
+        onEdit={openEditModal}
+        onDelete={handleDelete}
+      />
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {pagedProducts.length} of {filteredProducts.length} products
-        </p>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((currentPage) => Math.max(currentPage - 1, 1))}
-            disabled={safePage === 1}
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {safePage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((currentPage) => Math.min(currentPage + 1, totalPages))}
-            disabled={safePage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <ProductPagination
+        page={safePage}
+        totalPages={totalPages}
+        totalItems={filteredProducts.length}
+        currentItems={pagedProducts.length}
+        onPrevious={() => setPage((currentPage) => Math.max(currentPage - 1, 1))}
+        onNext={() => setPage((currentPage) => Math.min(currentPage + 1, totalPages))}
+      />
     </div>
   )
 }

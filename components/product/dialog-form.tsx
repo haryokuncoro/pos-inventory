@@ -1,10 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useFieldArray, useForm } from "react-hook-form"
-import { toast } from "sonner"
-import * as z from "zod"
+import type { Dispatch, SetStateAction } from "react"
+import type { UseFieldArrayReturn, UseFormReturn } from "react-hook-form"
 
 
 import { Button } from "@/components/ui/button"
@@ -17,6 +15,12 @@ import {
   type FieldValues,
 } from "react-hook-form"
 import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -26,83 +30,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import type { SelectCategory, SelectProduct } from "@/db/schema"
+import type { SelectCategory } from "@/db/schema"
+import type {
+  ProductFormValues,
+  ProductRow,
+} from "./table"
 
 // Types
 
-export type ProductVariantFormValues = {
-  id?: string
-  sku: string
-  name: string
-  stockQuantity: number
-  costPrice: string
-  sellingPrice: string
-  isActive: boolean
-}
-
-export type ProductFormValues = {
-  name: string
-  categoryId: string
-  description: string
-  isActive: boolean
-  variants: ProductVariantFormValues[]
-}
-
-const variantSchema = z.object({
-  id: z.string().optional(),
-  sku: z.string().trim().min(1, "SKU is required."),
-  name: z.string().trim().min(1, "Variant name is required."),
-  stockQuantity: z.number().min(0, "Stock quantity cannot be negative."),
-  costPrice: z.string().trim().min(1, "Cost price is required."),
-  sellingPrice: z.string().trim().min(1, "Selling price is required."),
-  isActive: z.boolean().default(true),
-})
-
-const productSchema = z.object({
-  name: z.string().trim().min(1, "Product name is required."),
-  categoryId: z.string().min(1, "Please select a category."),
-  description: z.string(),
-  isActive: z.boolean(),
-  variants: z.array(variantSchema).min(1, "At least one variant is required."),
-})
-
-type ProductWithVariants = SelectProduct & {
-  variants?: Array<{
-    id: string
-    stockQuantity: number
-    sku: string
-    name: string
-    costPrice: string
-    sellingPrice: string
-    isActive: boolean
-  }>
-}
-
-const defaultVariant: ProductVariantFormValues = {
-  sku: "",
-  name: "",
-  stockQuantity: 0,
-  costPrice: "",
-  sellingPrice: "",
-  isActive: true,
-}
-
-const defaultValues: ProductFormValues = {
-  name: "",
-  categoryId: "",
-  description: "",
-  isActive: true,
-  variants: [{ ...defaultVariant }],
-}
-
 type ProductDialogFormProps = {
-  selectedProduct: ProductWithVariants | null
+  form: UseFormReturn<ProductFormValues>
+  variantFields: UseFieldArrayReturn<ProductFormValues, "variants", "id">["fields"]
+
+  selectedProduct: ProductRow | null
   categories: SelectCategory[]
-  dialogOpen: boolean
-  setDialogOpen: (open: boolean) => void
-  resetModal: () => void
+  open: boolean
+  onOpenChange: Dispatch<SetStateAction<boolean>>
+  onClose: () => void
+  onCreate: () => void
+
   onSubmit: (data: ProductFormValues) => Promise<void>
-  openCreateModal: () => void
+
+  onAppendVariant: () => void
+  onRemoveVariant: (index: number) => void
 }
 
 // Reusable form components
@@ -394,70 +344,21 @@ function VariantForm({
 // -----------------------------------------------------------------------------
 
 export default function ProductDialogForm({
+  form,
+  variantFields,
   selectedProduct,
   categories,
-  dialogOpen,
-  setDialogOpen,
-  resetModal,
+  open,
+  onOpenChange,
+  onClose,
+  onCreate,
   onSubmit,
-  openCreateModal,
+  onAppendVariant,
+  onRemoveVariant,
 }: ProductDialogFormProps) {
   const isEditing = Boolean(selectedProduct)
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { isSubmitting },
-  } = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema) as never,
-    defaultValues,
-  })
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "variants",
-  })
-
-  React.useEffect(() => {
-    if (!dialogOpen) {
-      return
-    }
-
-    if (!selectedProduct) {
-      reset(defaultValues)
-      return
-    }
-
-    const selectedVariants = selectedProduct.variants?.length
-      ? selectedProduct.variants
-      : [{ ...defaultVariant }]
-
-    reset({
-      name: selectedProduct.name,
-      categoryId: selectedProduct.categoryId,
-      description: selectedProduct.description ?? "",
-      isActive: selectedProduct.isActive,
-      variants: selectedVariants.map((variant) => ({
-        id: variant.id,
-        sku: variant.sku,
-        name: variant.name,
-        stockQuantity: variant.stockQuantity,
-        costPrice: variant.costPrice,
-        sellingPrice: variant.sellingPrice,
-        isActive: variant.isActive,
-      })),
-    })
-  }, [dialogOpen, reset, selectedProduct])
-
-  const onSubmitForm = async (values: ProductFormValues) => {
-    try {
-      await onSubmit(values)
-      toast.success(isEditing ? "Product updated" : "Product created")
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save product.")
-    }
-  }
+  const isSubmitting = form.formState.isSubmitting
 
   const categoryOptions = categories.map((category) => ({
     value: category.id,
@@ -466,21 +367,18 @@ export default function ProductDialogForm({
 
   return (
     <Dialog
-      open={dialogOpen}
-      onOpenChange={(open) => {
-        setDialogOpen(open)
+      open={open}
+      onOpenChange={(value) => {
+        onOpenChange(value)
 
-        if (!open) {
-          resetModal()
+        if (!value) {
+          onClose()
         }
       }}
     >
       <DialogTrigger
-        render={
-          <Button onClick={openCreateModal}>
-            Add product
-          </Button>
-        }
+        onClick={onCreate}
+        render={<Button variant="outline">Add product</Button>}
       />
 
       <DialogContent className="max-h-[85vh] overflow-y-auto">
@@ -497,26 +395,38 @@ export default function ProductDialogForm({
         </DialogHeader>
 
         <form
-          onSubmit={handleSubmit(onSubmitForm)}
+          id="product-form"
+          onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-4"
         >
           {/* Product information */}
-          <div className="space-y-4">
-            <FormInput
-              control={control}
+          <FieldGroup>
+            <Controller
               name="name"
-              id="product-name"
-              label="Name"
-              placeholder="Enter product name"
-              rules={{
-                required: "Product name is required.",
-              }}
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="product-form-name">Name</FieldLabel>
+
+                  <Input
+                    {...field}
+                    id="product-form-name"
+                    placeholder="Enter product name"
+                    autoComplete="off"
+                    aria-invalid={fieldState.invalid}
+                  />
+
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
             />
 
             <FormSelect
-              control={control}
+              control={form.control}
               name="categoryId"
-              id="product-category"
+              id="product-form-category"
               label="Category"
               placeholder="Select a category"
               options={categoryOptions}
@@ -525,21 +435,35 @@ export default function ProductDialogForm({
               }}
             />
 
-            <FormInput
-              control={control}
+            <Controller
               name="description"
-              id="product-description"
-              label="Description"
-              placeholder="Optional description"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="product-form-description">Description</FieldLabel>
+
+                  <Input
+                    {...field}
+                    id="product-form-description"
+                    placeholder="Optional description"
+                    autoComplete="off"
+                    aria-invalid={fieldState.invalid}
+                  />
+
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
             />
 
             <FormCheckbox
-              control={control}
+              control={form.control}
               name="isActive"
               id="product-is-active"
               label="Active"
             />
-          </div>
+          </FieldGroup>
 
           {/* Variants */}
           <div className="space-y-3 rounded-xl border p-3">
@@ -552,20 +476,20 @@ export default function ProductDialogForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => append({ ...defaultVariant })}
+                onClick={onAppendVariant}
               >
                 Add variant
               </Button>
             </div>
 
-            {fields.length > 0 ? (
-              fields.map((variant, index) => (
+            {variantFields.length > 0 ? (
+              variantFields.map((variant, index) => (
                 <VariantForm
                   key={variant.id ?? `new-${index}`}
-                  control={control}
+                  control={form.control}
                   index={index}
-                  canRemove={fields.length > 1}
-                  onRemove={() => remove(index)}
+                  canRemove={variantFields.length > 1}
+                  onRemove={() => onRemoveVariant(index)}
                 />
               ))
             ) : (
@@ -577,19 +501,11 @@ export default function ProductDialogForm({
 
           {/* Footer */}
           <DialogFooter>
-            <DialogClose
-              render={
-                <Button
-                  type="button"
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-              }
-            />
+            <DialogClose disabled={isSubmitting}>Cancel</DialogClose>
 
             <Button
               type="submit"
+              form="product-form"
               disabled={isSubmitting}
             >
               {isSubmitting
