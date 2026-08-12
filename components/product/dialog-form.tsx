@@ -1,3 +1,12 @@
+"use client"
+
+import * as React from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useFieldArray, useForm } from "react-hook-form"
+import { toast } from "sonner"
+import * as z from "zod"
+
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -6,7 +15,6 @@ import {
   type Control,
   type FieldPath,
   type FieldValues,
-  type UseFormHandleSubmit,
 } from "react-hook-form"
 import {
   Dialog,
@@ -40,20 +48,61 @@ export type ProductFormValues = {
   variants: ProductVariantFormValues[]
 }
 
+const variantSchema = z.object({
+  id: z.string().optional(),
+  sku: z.string().trim().min(1, "SKU is required."),
+  name: z.string().trim().min(1, "Variant name is required."),
+  stockQuantity: z.number().min(0, "Stock quantity cannot be negative."),
+  costPrice: z.string().trim().min(1, "Cost price is required."),
+  sellingPrice: z.string().trim().min(1, "Selling price is required."),
+  isActive: z.boolean().default(true),
+})
+
+const productSchema = z.object({
+  name: z.string().trim().min(1, "Product name is required."),
+  categoryId: z.string().min(1, "Please select a category."),
+  description: z.string(),
+  isActive: z.boolean(),
+  variants: z.array(variantSchema).min(1, "At least one variant is required."),
+})
+
+type ProductWithVariants = SelectProduct & {
+  variants?: Array<{
+    id: string
+    stockQuantity: number
+    sku: string
+    name: string
+    costPrice: string
+    sellingPrice: string
+    isActive: boolean
+  }>
+}
+
+const defaultVariant: ProductVariantFormValues = {
+  sku: "",
+  name: "",
+  stockQuantity: 0,
+  costPrice: "",
+  sellingPrice: "",
+  isActive: true,
+}
+
+const defaultValues: ProductFormValues = {
+  name: "",
+  categoryId: "",
+  description: "",
+  isActive: true,
+  variants: [{ ...defaultVariant }],
+}
+
 type ProductDialogFormProps = {
-  selectedProduct: SelectProduct | null
+  selectedProduct: ProductWithVariants | null
   categories: SelectCategory[]
   dialogOpen: boolean
   setDialogOpen: (open: boolean) => void
   resetModal: () => void
-  onSubmit: (data: ProductFormValues) => void
-  control: Control<ProductFormValues>
-  handleSubmit: UseFormHandleSubmit<ProductFormValues>
-  isSubmitting: boolean
+  onSubmit: (data: ProductFormValues) => Promise<void>
   openCreateModal: () => void
-  variants: ProductVariantFormValues[]
-  appendVariant: () => void
-  removeVariant: (index: number) => void
 }
 
 // Reusable form components
@@ -65,6 +114,7 @@ type FormInputProps<T extends FieldValues> = {
   id: string
   placeholder?: string
   type?: React.HTMLInputTypeAttribute
+  parseAsNumber?: boolean
   step?: string
   rules?: Parameters<typeof Controller<T>>[0]["rules"]
 }
@@ -76,6 +126,7 @@ function FormInput<T extends FieldValues>({
   id,
   placeholder,
   type = "text",
+  parseAsNumber = false,
   step,
   rules,
 }: FormInputProps<T>) {
@@ -96,7 +147,7 @@ function FormInput<T extends FieldValues>({
               placeholder={placeholder}
               value={field.value ?? ""}
               onChange={(event) => {
-                if (type === "number") {
+                if (parseAsNumber) {
                   const value = event.target.value
 
                   field.onChange(
@@ -280,6 +331,7 @@ function VariantForm({
           label="Stock Quantity"
           placeholder="Stock quantity"
           type="number"
+          parseAsNumber
           rules={{
             required: "Stock quantity is required.",
             min: {
@@ -305,9 +357,9 @@ function VariantForm({
           name={`${prefix}.costPrice`}
           id={`variant-cost-${index}`}
           label="Cost Price"
-          placeholder="0.00"
+          placeholder="0"
           type="number"
-          step="0.01"
+          step="500"
           rules={{
             required: "Cost price is required.",
           }}
@@ -318,9 +370,9 @@ function VariantForm({
           name={`${prefix}.sellingPrice`}
           id={`variant-selling-${index}`}
           label="Selling Price"
-          placeholder="0.00"
+          placeholder="0"
           type="number"
-          step="0.01"
+          step="500"
           rules={{
             required: "Selling price is required.",
           }}
@@ -348,15 +400,64 @@ export default function ProductDialogForm({
   setDialogOpen,
   resetModal,
   onSubmit,
-  control,
-  handleSubmit,
-  isSubmitting,
   openCreateModal,
-  variants,
-  appendVariant,
-  removeVariant,
 }: ProductDialogFormProps) {
   const isEditing = Boolean(selectedProduct)
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<ProductFormValues>({
+    resolver: zodResolver(productSchema) as never,
+    defaultValues,
+  })
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "variants",
+  })
+
+  React.useEffect(() => {
+    if (!dialogOpen) {
+      return
+    }
+
+    if (!selectedProduct) {
+      reset(defaultValues)
+      return
+    }
+
+    const selectedVariants = selectedProduct.variants?.length
+      ? selectedProduct.variants
+      : [{ ...defaultVariant }]
+
+    reset({
+      name: selectedProduct.name,
+      categoryId: selectedProduct.categoryId,
+      description: selectedProduct.description ?? "",
+      isActive: selectedProduct.isActive,
+      variants: selectedVariants.map((variant) => ({
+        id: variant.id,
+        sku: variant.sku,
+        name: variant.name,
+        stockQuantity: variant.stockQuantity,
+        costPrice: variant.costPrice,
+        sellingPrice: variant.sellingPrice,
+        isActive: variant.isActive,
+      })),
+    })
+  }, [dialogOpen, reset, selectedProduct])
+
+  const onSubmitForm = async (values: ProductFormValues) => {
+    try {
+      await onSubmit(values)
+      toast.success(isEditing ? "Product updated" : "Product created")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save product.")
+    }
+  }
 
   const categoryOptions = categories.map((category) => ({
     value: category.id,
@@ -396,7 +497,7 @@ export default function ProductDialogForm({
         </DialogHeader>
 
         <form
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={handleSubmit(onSubmitForm)}
           className="space-y-4"
         >
           {/* Product information */}
@@ -451,20 +552,20 @@ export default function ProductDialogForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={appendVariant}
+                onClick={() => append({ ...defaultVariant })}
               >
                 Add variant
               </Button>
             </div>
 
-            {variants.length > 0 ? (
-              variants.map((variant, index) => (
+            {fields.length > 0 ? (
+              fields.map((variant, index) => (
                 <VariantForm
                   key={variant.id ?? `new-${index}`}
                   control={control}
                   index={index}
-                  canRemove={variants.length > 1}
-                  onRemove={() => removeVariant(index)}
+                  canRemove={fields.length > 1}
+                  onRemove={() => remove(index)}
                 />
               ))
             ) : (

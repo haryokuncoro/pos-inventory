@@ -1,8 +1,5 @@
 "use client"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
-import * as z from "zod"
 import ProductDialogForm, { type ProductFormValues } from "./dialog-form"
 
 import { useEffect, useMemo, useState } from "react"
@@ -39,24 +36,6 @@ type ProductTableProps = {
   initialCategories: SelectCategory[]
 }
 
-const variantSchema = z.object({
-  id: z.string().optional(),
-  sku: z.string().trim().min(1, "SKU is required."),
-  stockQuantity: z.string().min(1, "Stock quantity is required."),
-  name: z.string().trim().min(1, "Variant name is required."),
-  costPrice: z.string().min(1, "Cost price is required."),
-  sellingPrice: z.string().min(1, "Selling price is required."),
-  isActive: z.boolean().default(true),
-})
-
-const productSchema = z.object({
-  name: z.string().trim().min(1, "Product name is required."),
-  categoryId: z.string().min(1, "Please select a category."),
-  description: z.string(),
-  isActive: z.boolean(),
-  variants: z.array(variantSchema),
-})
-
 export function ProductTable({ initialProducts, initialCategories }: ProductTableProps) {
   const [products, setProducts] = useState<ProductRow[]>(initialProducts)
   const [categories] = useState<SelectCategory[]>(initialCategories)
@@ -65,30 +44,6 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
   const [pageSize, setPageSize] = useState(5)
   const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { isSubmitting },
-    watch,
-  } = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema as never),
-    defaultValues: {
-      name: "",
-      categoryId: "",
-      description: "",
-      isActive: true,
-      variants: [{ sku: "", name: "", costPrice: "", sellingPrice: "", isActive: true }],
-    },
-  })
-
-  const { append, remove } = useFieldArray({
-    control,
-    name: "variants",
-  })
-
-  const variants = watch("variants") ?? []
 
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -123,44 +78,15 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
   const resetModal = () => {
     setDialogOpen(false)
     setSelectedProduct(null)
-    reset({
-      name: "",
-      categoryId: "",
-      description: "",
-      isActive: true,
-      variants: [{ sku: "", name: "", costPrice: "", sellingPrice: "", isActive: true }],
-    })
   }
 
   const openCreateModal = () => {
     setSelectedProduct(null)
-    reset({
-      name: "",
-      categoryId: "",
-      description: "",
-      isActive: true,
-      variants: [{ sku: "", name: "", costPrice: "", sellingPrice: "", isActive: true }],
-    })
     setDialogOpen(true)
   }
 
   const openEditModal = (product: ProductRow) => {
     setSelectedProduct(product)
-    reset({
-      name: product.name,
-      categoryId: product.categoryId,
-      description: product.description ?? "",
-      isActive: product.isActive,
-      variants: (product.variants ?? []).map((variant) => ({
-        id: variant.id,
-        sku: variant.sku,
-        stockQuantity: variant.stockQuantity,
-        name: variant.name,
-        costPrice: variant.costPrice,
-        sellingPrice: variant.sellingPrice,
-        isActive: variant.isActive,
-      })),
-    })
     setDialogOpen(true)
   }
 
@@ -215,7 +141,6 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
               : product
           )
         )
-        toast.success("Product updated")
       } else {
         const createdResult = await createProduct(
           {
@@ -249,12 +174,11 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
             ...currentProducts,
           ])
         }
-        toast.success("Product created")
       }
 
       resetModal()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to save product.")
+      throw error
     }
   }
 
@@ -314,13 +238,7 @@ export function ProductTable({ initialProducts, initialCategories }: ProductTabl
           setDialogOpen={setDialogOpen}
           resetModal={resetModal}
           onSubmit={onSubmit}
-          control={control}
-          handleSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
           openCreateModal={openCreateModal}
-          variants={variants}
-          appendVariant={() => append({ sku: "", name: "", costPrice: "", sellingPrice: "", stockQuantity: 0, isActive: true })}
-          removeVariant={(index) => remove(index)}
         />
       </div>
 
