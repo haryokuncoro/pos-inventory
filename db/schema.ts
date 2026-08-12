@@ -380,11 +380,9 @@ export const inventoryTransaction = pgTable(
   ],
 );
 
-export type InsertInventoryTransaction =
-  typeof inventoryTransaction.$inferInsert;
+export type InsertInventoryTransaction = typeof inventoryTransaction.$inferInsert;
 
-export type SelectInventoryTransaction =
-  typeof inventoryTransaction.$inferSelect;
+export type SelectInventoryTransaction = typeof inventoryTransaction.$inferSelect;
 
 // POS / SALES
 export const sale = pgTable(
@@ -472,6 +470,9 @@ export const sale = pgTable(
   ],
 );
 
+export type InsertSale = typeof sale.$inferInsert;
+export type SelectSale = typeof sale.$inferSelect;
+
 export const saleItem = pgTable(
   "sale_item",
   {
@@ -543,6 +544,9 @@ export const saleItem = pgTable(
   ],
 );
 
+export type InsertSaleItem = typeof saleItem.$inferInsert;
+export type SelectSaleItem = typeof saleItem.$inferSelect;
+
 // PAYMENT
 export const payment = pgTable(
   "payment",
@@ -580,6 +584,9 @@ export const payment = pgTable(
     ),
   ],
 );
+
+export type InsertPayment = typeof payment.$inferInsert;
+export type SelectPayment = typeof payment.$inferSelect;
 
 // RELATIONS
 export const userRelations = relations(

@@ -13,8 +13,18 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import { headers } from "next/headers"
 
-export default function Page() {
+export default async function Page() {
+   const session = await auth.api.getSession({
+      headers: await headers(),
+    })
+  
+    if (!session) {
+      redirect("/login")
+    }
   return (
     <SidebarProvider>
       <AppSidebar />

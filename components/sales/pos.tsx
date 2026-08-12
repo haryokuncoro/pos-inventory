@@ -37,11 +37,11 @@ import {
     TabsTrigger,
 } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { createSale } from "@/lib/actions/sales";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
-// ============================================================
 // TYPES
-// ============================================================
-
 export type SaleProduct = {
     id: string;
     name: string;
@@ -62,9 +62,7 @@ type PaymentMethod =
     | "CARD"
     | "TRANSFER";
 
-// ============================================================
 // HELPERS
-// ============================================================
 
 function formatRupiah(value: number) {
     return new Intl.NumberFormat("id-ID", {
@@ -74,19 +72,14 @@ function formatRupiah(value: number) {
     }).format(value);
 }
 
-// ============================================================
 // PROPS
-// ============================================================
 
 type PosPageProps = {
     products: SaleProduct[];
     categories?: string[];
 };
 
-// ============================================================
 // PAGE
-// ============================================================
-
 export function PosPage({
     products,
     categories = [],
@@ -102,10 +95,9 @@ export function PosPage({
 
     const [cartOpen, setCartOpen] =
         React.useState(false);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    // ----------------------------------------------------------
     // CATEGORIES
-    // ----------------------------------------------------------
 
     const categoryList = React.useMemo(() => {
         const uniqueCategories = Array.from(
@@ -128,9 +120,7 @@ export function PosPage({
         ];
     }, [categories, products]);
 
-    // ----------------------------------------------------------
     // FILTER PRODUCTS
-    // ----------------------------------------------------------
 
     const filteredProducts = React.useMemo(() => {
         const keyword = search.trim().toLowerCase();
@@ -159,9 +149,7 @@ export function PosPage({
         });
     }, [products, search, selectedCategory]);
 
-    // ----------------------------------------------------------
     // CART
-    // ----------------------------------------------------------
 
     function addToCart(product: SaleProduct) {
         if (product.stockQuantity <= 0) {
@@ -248,9 +236,48 @@ export function PosPage({
         setCart([]);
     }
 
-    // ----------------------------------------------------------
+    async function handleCheckout() {
+        if (cart.length === 0) {
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const session = await authClient.getSession();
+            const cashierId = session.data?.user?.id;
+
+            const result = await createSale({
+                cashierId,
+                items: cart.map((item) => ({
+                    variantId: item.id,
+                    quantity: item.quantity,
+                })),
+                payment: {
+                    method: paymentMethod,
+                    amount: total,
+                },
+            });
+
+            if (!result.success) {
+                toast.error(result.message);
+                return;
+            }
+
+            toast.success(`Transaksi berhasil: ${result.invoiceNumber}`);
+            clearCart();
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Gagal membuat transaksi.",
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
     // TOTALS
-    // ----------------------------------------------------------
 
     const totalItems = cart.reduce(
         (sum, item) => sum + item.quantity,
@@ -268,9 +295,7 @@ export function PosPage({
     const total =
         subtotal - discount + tax;
 
-    // ----------------------------------------------------------
     // PRODUCT CATALOG
-    // ----------------------------------------------------------
 
     function ProductCatalog() {
         return (
@@ -368,8 +393,8 @@ export function PosPage({
 
                                             <span
                                                 className={`shrink-0 text-xs ${outOfStock
-                                                        ? "text-destructive"
-                                                        : "text-muted-foreground"
+                                                    ? "text-destructive"
+                                                    : "text-muted-foreground"
                                                     }`}
                                             >
                                                 {outOfStock
@@ -655,13 +680,10 @@ export function PosPage({
 
                     <Button
                         className="h-12 w-full text-base"
-                        disabled={cart.length === 0}
-                        onClick={() => {
-                            // TODO:
-                            // call createSale()
-                        }}
+                        disabled={cart.length === 0 || isSubmitting}
+                        onClick={handleCheckout}
                     >
-                        Bayar {formatRupiah(total)}
+                        {isSubmitting ? "Memproses..." : `Bayar ${formatRupiah(total)}`}
                     </Button>
 
                     {cart.length > 0 && (
@@ -678,13 +700,12 @@ export function PosPage({
         );
     }
 
-    // ----------------------------------------------------------
     // RETURN
-    // ----------------------------------------------------------
 
     return (
         <div className="flex min-h-full flex-col gap-4 p-4 lg:p-6">
-            {/* =====================================================
+            {
+            /* =====================================================
           TABLET / MOBILE CART BAR
           Hidden on XL because desktop has sidebar.
           ===================================================== */}
@@ -730,7 +751,8 @@ export function PosPage({
                 </div>
             </div>
 
-            {/* =====================================================
+            {
+            /* =====================================================
           MAIN
           ===================================================== */}
 
@@ -770,9 +792,7 @@ export function PosPage({
     );
 }
 
-// ============================================================
 // PAYMENT BUTTON
-// ============================================================
 
 function PaymentButton({
     active,
