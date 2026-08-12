@@ -1,0 +1,501 @@
+name,category,variantName,sku,costPrice,sellingPrice,stockQuantity
+Indomie Goreng,Mie Instan,85g,SKU-00001,2500,3500,17
+Indomie Soto,Minuman,75g,SKU-00002,2500,3500,24
+Aqua,Snack,600ml,SKU-00003,2500,4000,31
+Teh Botol Sosro,Sembako,450ml,SKU-00004,3500,5000,38
+Kopi Kapal Api,Susu,65g,SKU-00005,7000,9500,45
+Beras Premium,Kopi & Teh,5kg,SKU-00006,65000,75000,52
+Gula Pasir,Bumbu Dapur,1kg,SKU-00007,14500,17000,59
+Minyak Goreng,Makanan Kaleng,1L,SKU-00008,17000,20000,66
+Susu UHT,Perawatan Diri,1L,SKU-00009,18000,22000,73
+Sabun Mandi,Kebersihan,100g,SKU-00010,3500,5000,80
+Shampoo,Mie Instan,170ml,SKU-00011,18000,23000,87
+Pasta Gigi,Minuman,120g,SKU-00012,11000,15000,94
+Biskuit,Snack,120g,SKU-00013,6500,9000,101
+Keripik Kentang,Sembako,68g,SKU-00014,9000,12000,108
+Sarden Kaleng,Susu,155g,SKU-00015,12000,16000,115
+Kecap Manis,Kopi & Teh,600ml,SKU-00016,14000,18000,122
+Saus Sambal,Bumbu Dapur,335ml,SKU-00017,10000,14000,129
+Tepung Terigu,Makanan Kaleng,1kg,SKU-00018,12000,15000,136
+Telur Ayam,Perawatan Diri,1kg,SKU-00019,27000,32000,143
+Tisu Wajah,Kebersihan,200 sheets,SKU-00020,9000,13000,150
+Indomie Goreng 2,Mie Instan,85g,SKU-00021,2500,3500,157
+Indomie Soto 2,Minuman,75g,SKU-00022,2500,3500,164
+Aqua 2,Snack,600ml,SKU-00023,2500,4000,171
+Teh Botol Sosro 2,Sembako,450ml,SKU-00024,3500,5000,178
+Kopi Kapal Api 2,Susu,65g,SKU-00025,7000,9500,185
+Beras Premium 2,Kopi & Teh,5kg,SKU-00026,65000,75000,192
+Gula Pasir 2,Bumbu Dapur,1kg,SKU-00027,14500,17000,199
+Minyak Goreng 2,Makanan Kaleng,1L,SKU-00028,17000,20000,15
+Susu UHT 2,Perawatan Diri,1L,SKU-00029,18000,22000,22
+Sabun Mandi 2,Kebersihan,100g,SKU-00030,3500,5000,29
+Shampoo 2,Mie Instan,170ml,SKU-00031,18000,23000,36
+Pasta Gigi 2,Minuman,120g,SKU-00032,11000,15000,43
+Biskuit 2,Snack,120g,SKU-00033,6500,9000,50
+Keripik Kentang 2,Sembako,68g,SKU-00034,9000,12000,57
+Sarden Kaleng 2,Susu,155g,SKU-00035,12000,16000,64
+Kecap Manis 2,Kopi & Teh,600ml,SKU-00036,14000,18000,71
+Saus Sambal 2,Bumbu Dapur,335ml,SKU-00037,10000,14000,78
+Tepung Terigu 2,Makanan Kaleng,1kg,SKU-00038,12000,15000,85
+Telur Ayam 2,Perawatan Diri,1kg,SKU-00039,27000,32000,92
+Tisu Wajah 2,Kebersihan,200 sheets,SKU-00040,9000,13000,99
+Indomie Goreng 3,Mie Instan,85g,SKU-00041,2500,3500,106
+Indomie Soto 3,Minuman,75g,SKU-00042,2500,3500,113
+Aqua 3,Snack,600ml,SKU-00043,2500,4000,120
+Teh Botol Sosro 3,Sembako,450ml,SKU-00044,3500,5000,127
+Kopi Kapal Api 3,Susu,65g,SKU-00045,7000,9500,134
+Beras Premium 3,Kopi & Teh,5kg,SKU-00046,65000,75000,141
+Gula Pasir 3,Bumbu Dapur,1kg,SKU-00047,14500,17000,148
+Minyak Goreng 3,Makanan Kaleng,1L,SKU-00048,17000,20000,155
+Susu UHT 3,Perawatan Diri,1L,SKU-00049,18000,22000,162
+Sabun Mandi 3,Kebersihan,100g,SKU-00050,3500,5000,169
+Shampoo 3,Mie Instan,170ml,SKU-00051,18000,23000,176
+Pasta Gigi 3,Minuman,120g,SKU-00052,11000,15000,183
+Biskuit 3,Snack,120g,SKU-00053,6500,9000,190
+Keripik Kentang 3,Sembako,68g,SKU-00054,9000,12000,197
+Sarden Kaleng 3,Susu,155g,SKU-00055,12000,16000,13
+Kecap Manis 3,Kopi & Teh,600ml,SKU-00056,14000,18000,20
+Saus Sambal 3,Bumbu Dapur,335ml,SKU-00057,10000,14000,27
+Tepung Terigu 3,Makanan Kaleng,1kg,SKU-00058,12000,15000,34
+Telur Ayam 3,Perawatan Diri,1kg,SKU-00059,27000,32000,41
+Tisu Wajah 3,Kebersihan,200 sheets,SKU-00060,9000,13000,48
+Indomie Goreng 4,Mie Instan,85g,SKU-00061,2500,3500,55
+Indomie Soto 4,Minuman,75g,SKU-00062,2500,3500,62
+Aqua 4,Snack,600ml,SKU-00063,2500,4000,69
+Teh Botol Sosro 4,Sembako,450ml,SKU-00064,3500,5000,76
+Kopi Kapal Api 4,Susu,65g,SKU-00065,7000,9500,83
+Beras Premium 4,Kopi & Teh,5kg,SKU-00066,65000,75000,90
+Gula Pasir 4,Bumbu Dapur,1kg,SKU-00067,14500,17000,97
+Minyak Goreng 4,Makanan Kaleng,1L,SKU-00068,17000,20000,104
+Susu UHT 4,Perawatan Diri,1L,SKU-00069,18000,22000,111
+Sabun Mandi 4,Kebersihan,100g,SKU-00070,3500,5000,118
+Shampoo 4,Mie Instan,170ml,SKU-00071,18000,23000,125
+Pasta Gigi 4,Minuman,120g,SKU-00072,11000,15000,132
+Biskuit 4,Snack,120g,SKU-00073,6500,9000,139
+Keripik Kentang 4,Sembako,68g,SKU-00074,9000,12000,146
+Sarden Kaleng 4,Susu,155g,SKU-00075,12000,16000,153
+Kecap Manis 4,Kopi & Teh,600ml,SKU-00076,14000,18000,160
+Saus Sambal 4,Bumbu Dapur,335ml,SKU-00077,10000,14000,167
+Tepung Terigu 4,Makanan Kaleng,1kg,SKU-00078,12000,15000,174
+Telur Ayam 4,Perawatan Diri,1kg,SKU-00079,27000,32000,181
+Tisu Wajah 4,Kebersihan,200 sheets,SKU-00080,9000,13000,188
+Indomie Goreng 5,Mie Instan,85g,SKU-00081,2500,3500,195
+Indomie Soto 5,Minuman,75g,SKU-00082,2500,3500,11
+Aqua 5,Snack,600ml,SKU-00083,2500,4000,18
+Teh Botol Sosro 5,Sembako,450ml,SKU-00084,3500,5000,25
+Kopi Kapal Api 5,Susu,65g,SKU-00085,7000,9500,32
+Beras Premium 5,Kopi & Teh,5kg,SKU-00086,65000,75000,39
+Gula Pasir 5,Bumbu Dapur,1kg,SKU-00087,14500,17000,46
+Minyak Goreng 5,Makanan Kaleng,1L,SKU-00088,17000,20000,53
+Susu UHT 5,Perawatan Diri,1L,SKU-00089,18000,22000,60
+Sabun Mandi 5,Kebersihan,100g,SKU-00090,3500,5000,67
+Shampoo 5,Mie Instan,170ml,SKU-00091,18000,23000,74
+Pasta Gigi 5,Minuman,120g,SKU-00092,11000,15000,81
+Biskuit 5,Snack,120g,SKU-00093,6500,9000,88
+Keripik Kentang 5,Sembako,68g,SKU-00094,9000,12000,95
+Sarden Kaleng 5,Susu,155g,SKU-00095,12000,16000,102
+Kecap Manis 5,Kopi & Teh,600ml,SKU-00096,14000,18000,109
+Saus Sambal 5,Bumbu Dapur,335ml,SKU-00097,10000,14000,116
+Tepung Terigu 5,Makanan Kaleng,1kg,SKU-00098,12000,15000,123
+Telur Ayam 5,Perawatan Diri,1kg,SKU-00099,27000,32000,130
+Tisu Wajah 5,Kebersihan,200 sheets,SKU-00100,9000,13000,137
+Indomie Goreng 6,Mie Instan,85g,SKU-00101,2500,3500,144
+Indomie Soto 6,Minuman,75g,SKU-00102,2500,3500,151
+Aqua 6,Snack,600ml,SKU-00103,2500,4000,158
+Teh Botol Sosro 6,Sembako,450ml,SKU-00104,3500,5000,165
+Kopi Kapal Api 6,Susu,65g,SKU-00105,7000,9500,172
+Beras Premium 6,Kopi & Teh,5kg,SKU-00106,65000,75000,179
+Gula Pasir 6,Bumbu Dapur,1kg,SKU-00107,14500,17000,186
+Minyak Goreng 6,Makanan Kaleng,1L,SKU-00108,17000,20000,193
+Susu UHT 6,Perawatan Diri,1L,SKU-00109,18000,22000,200
+Sabun Mandi 6,Kebersihan,100g,SKU-00110,3500,5000,16
+Shampoo 6,Mie Instan,170ml,SKU-00111,18000,23000,23
+Pasta Gigi 6,Minuman,120g,SKU-00112,11000,15000,30
+Biskuit 6,Snack,120g,SKU-00113,6500,9000,37
+Keripik Kentang 6,Sembako,68g,SKU-00114,9000,12000,44
+Sarden Kaleng 6,Susu,155g,SKU-00115,12000,16000,51
+Kecap Manis 6,Kopi & Teh,600ml,SKU-00116,14000,18000,58
+Saus Sambal 6,Bumbu Dapur,335ml,SKU-00117,10000,14000,65
+Tepung Terigu 6,Makanan Kaleng,1kg,SKU-00118,12000,15000,72
+Telur Ayam 6,Perawatan Diri,1kg,SKU-00119,27000,32000,79
+Tisu Wajah 6,Kebersihan,200 sheets,SKU-00120,9000,13000,86
+Indomie Goreng 7,Mie Instan,85g,SKU-00121,2500,3500,93
+Indomie Soto 7,Minuman,75g,SKU-00122,2500,3500,100
+Aqua 7,Snack,600ml,SKU-00123,2500,4000,107
+Teh Botol Sosro 7,Sembako,450ml,SKU-00124,3500,5000,114
+Kopi Kapal Api 7,Susu,65g,SKU-00125,7000,9500,121
+Beras Premium 7,Kopi & Teh,5kg,SKU-00126,65000,75000,128
+Gula Pasir 7,Bumbu Dapur,1kg,SKU-00127,14500,17000,135
+Minyak Goreng 7,Makanan Kaleng,1L,SKU-00128,17000,20000,142
+Susu UHT 7,Perawatan Diri,1L,SKU-00129,18000,22000,149
+Sabun Mandi 7,Kebersihan,100g,SKU-00130,3500,5000,156
+Shampoo 7,Mie Instan,170ml,SKU-00131,18000,23000,163
+Pasta Gigi 7,Minuman,120g,SKU-00132,11000,15000,170
+Biskuit 7,Snack,120g,SKU-00133,6500,9000,177
+Keripik Kentang 7,Sembako,68g,SKU-00134,9000,12000,184
+Sarden Kaleng 7,Susu,155g,SKU-00135,12000,16000,191
+Kecap Manis 7,Kopi & Teh,600ml,SKU-00136,14000,18000,198
+Saus Sambal 7,Bumbu Dapur,335ml,SKU-00137,10000,14000,14
+Tepung Terigu 7,Makanan Kaleng,1kg,SKU-00138,12000,15000,21
+Telur Ayam 7,Perawatan Diri,1kg,SKU-00139,27000,32000,28
+Tisu Wajah 7,Kebersihan,200 sheets,SKU-00140,9000,13000,35
+Indomie Goreng 8,Mie Instan,85g,SKU-00141,2500,3500,42
+Indomie Soto 8,Minuman,75g,SKU-00142,2500,3500,49
+Aqua 8,Snack,600ml,SKU-00143,2500,4000,56
+Teh Botol Sosro 8,Sembako,450ml,SKU-00144,3500,5000,63
+Kopi Kapal Api 8,Susu,65g,SKU-00145,7000,9500,70
+Beras Premium 8,Kopi & Teh,5kg,SKU-00146,65000,75000,77
+Gula Pasir 8,Bumbu Dapur,1kg,SKU-00147,14500,17000,84
+Minyak Goreng 8,Makanan Kaleng,1L,SKU-00148,17000,20000,91
+Susu UHT 8,Perawatan Diri,1L,SKU-00149,18000,22000,98
+Sabun Mandi 8,Kebersihan,100g,SKU-00150,3500,5000,105
+Shampoo 8,Mie Instan,170ml,SKU-00151,18000,23000,112
+Pasta Gigi 8,Minuman,120g,SKU-00152,11000,15000,119
+Biskuit 8,Snack,120g,SKU-00153,6500,9000,126
+Keripik Kentang 8,Sembako,68g,SKU-00154,9000,12000,133
+Sarden Kaleng 8,Susu,155g,SKU-00155,12000,16000,140
+Kecap Manis 8,Kopi & Teh,600ml,SKU-00156,14000,18000,147
+Saus Sambal 8,Bumbu Dapur,335ml,SKU-00157,10000,14000,154
+Tepung Terigu 8,Makanan Kaleng,1kg,SKU-00158,12000,15000,161
+Telur Ayam 8,Perawatan Diri,1kg,SKU-00159,27000,32000,168
+Tisu Wajah 8,Kebersihan,200 sheets,SKU-00160,9000,13000,175
+Indomie Goreng 9,Mie Instan,85g,SKU-00161,2500,3500,182
+Indomie Soto 9,Minuman,75g,SKU-00162,2500,3500,189
+Aqua 9,Snack,600ml,SKU-00163,2500,4000,196
+Teh Botol Sosro 9,Sembako,450ml,SKU-00164,3500,5000,12
+Kopi Kapal Api 9,Susu,65g,SKU-00165,7000,9500,19
+Beras Premium 9,Kopi & Teh,5kg,SKU-00166,65000,75000,26
+Gula Pasir 9,Bumbu Dapur,1kg,SKU-00167,14500,17000,33
+Minyak Goreng 9,Makanan Kaleng,1L,SKU-00168,17000,20000,40
+Susu UHT 9,Perawatan Diri,1L,SKU-00169,18000,22000,47
+Sabun Mandi 9,Kebersihan,100g,SKU-00170,3500,5000,54
+Shampoo 9,Mie Instan,170ml,SKU-00171,18000,23000,61
+Pasta Gigi 9,Minuman,120g,SKU-00172,11000,15000,68
+Biskuit 9,Snack,120g,SKU-00173,6500,9000,75
+Keripik Kentang 9,Sembako,68g,SKU-00174,9000,12000,82
+Sarden Kaleng 9,Susu,155g,SKU-00175,12000,16000,89
+Kecap Manis 9,Kopi & Teh,600ml,SKU-00176,14000,18000,96
+Saus Sambal 9,Bumbu Dapur,335ml,SKU-00177,10000,14000,103
+Tepung Terigu 9,Makanan Kaleng,1kg,SKU-00178,12000,15000,110
+Telur Ayam 9,Perawatan Diri,1kg,SKU-00179,27000,32000,117
+Tisu Wajah 9,Kebersihan,200 sheets,SKU-00180,9000,13000,124
+Indomie Goreng 10,Mie Instan,85g,SKU-00181,2500,3500,131
+Indomie Soto 10,Minuman,75g,SKU-00182,2500,3500,138
+Aqua 10,Snack,600ml,SKU-00183,2500,4000,145
+Teh Botol Sosro 10,Sembako,450ml,SKU-00184,3500,5000,152
+Kopi Kapal Api 10,Susu,65g,SKU-00185,7000,9500,159
+Beras Premium 10,Kopi & Teh,5kg,SKU-00186,65000,75000,166
+Gula Pasir 10,Bumbu Dapur,1kg,SKU-00187,14500,17000,173
+Minyak Goreng 10,Makanan Kaleng,1L,SKU-00188,17000,20000,180
+Susu UHT 10,Perawatan Diri,1L,SKU-00189,18000,22000,187
+Sabun Mandi 10,Kebersihan,100g,SKU-00190,3500,5000,194
+Shampoo 10,Mie Instan,170ml,SKU-00191,18000,23000,10
+Pasta Gigi 10,Minuman,120g,SKU-00192,11000,15000,17
+Biskuit 10,Snack,120g,SKU-00193,6500,9000,24
+Keripik Kentang 10,Sembako,68g,SKU-00194,9000,12000,31
+Sarden Kaleng 10,Susu,155g,SKU-00195,12000,16000,38
+Kecap Manis 10,Kopi & Teh,600ml,SKU-00196,14000,18000,45
+Saus Sambal 10,Bumbu Dapur,335ml,SKU-00197,10000,14000,52
+Tepung Terigu 10,Makanan Kaleng,1kg,SKU-00198,12000,15000,59
+Telur Ayam 10,Perawatan Diri,1kg,SKU-00199,27000,32000,66
+Tisu Wajah 10,Kebersihan,200 sheets,SKU-00200,9000,13000,73
+Indomie Goreng 11,Mie Instan,85g,SKU-00201,2500,3500,80
+Indomie Soto 11,Minuman,75g,SKU-00202,2500,3500,87
+Aqua 11,Snack,600ml,SKU-00203,2500,4000,94
+Teh Botol Sosro 11,Sembako,450ml,SKU-00204,3500,5000,101
+Kopi Kapal Api 11,Susu,65g,SKU-00205,7000,9500,108
+Beras Premium 11,Kopi & Teh,5kg,SKU-00206,65000,75000,115
+Gula Pasir 11,Bumbu Dapur,1kg,SKU-00207,14500,17000,122
+Minyak Goreng 11,Makanan Kaleng,1L,SKU-00208,17000,20000,129
+Susu UHT 11,Perawatan Diri,1L,SKU-00209,18000,22000,136
+Sabun Mandi 11,Kebersihan,100g,SKU-00210,3500,5000,143
+Shampoo 11,Mie Instan,170ml,SKU-00211,18000,23000,150
+Pasta Gigi 11,Minuman,120g,SKU-00212,11000,15000,157
+Biskuit 11,Snack,120g,SKU-00213,6500,9000,164
+Keripik Kentang 11,Sembako,68g,SKU-00214,9000,12000,171
+Sarden Kaleng 11,Susu,155g,SKU-00215,12000,16000,178
+Kecap Manis 11,Kopi & Teh,600ml,SKU-00216,14000,18000,185
+Saus Sambal 11,Bumbu Dapur,335ml,SKU-00217,10000,14000,192
+Tepung Terigu 11,Makanan Kaleng,1kg,SKU-00218,12000,15000,199
+Telur Ayam 11,Perawatan Diri,1kg,SKU-00219,27000,32000,15
+Tisu Wajah 11,Kebersihan,200 sheets,SKU-00220,9000,13000,22
+Indomie Goreng 12,Mie Instan,85g,SKU-00221,2500,3500,29
+Indomie Soto 12,Minuman,75g,SKU-00222,2500,3500,36
+Aqua 12,Snack,600ml,SKU-00223,2500,4000,43
+Teh Botol Sosro 12,Sembako,450ml,SKU-00224,3500,5000,50
+Kopi Kapal Api 12,Susu,65g,SKU-00225,7000,9500,57
+Beras Premium 12,Kopi & Teh,5kg,SKU-00226,65000,75000,64
+Gula Pasir 12,Bumbu Dapur,1kg,SKU-00227,14500,17000,71
+Minyak Goreng 12,Makanan Kaleng,1L,SKU-00228,17000,20000,78
+Susu UHT 12,Perawatan Diri,1L,SKU-00229,18000,22000,85
+Sabun Mandi 12,Kebersihan,100g,SKU-00230,3500,5000,92
+Shampoo 12,Mie Instan,170ml,SKU-00231,18000,23000,99
+Pasta Gigi 12,Minuman,120g,SKU-00232,11000,15000,106
+Biskuit 12,Snack,120g,SKU-00233,6500,9000,113
+Keripik Kentang 12,Sembako,68g,SKU-00234,9000,12000,120
+Sarden Kaleng 12,Susu,155g,SKU-00235,12000,16000,127
+Kecap Manis 12,Kopi & Teh,600ml,SKU-00236,14000,18000,134
+Saus Sambal 12,Bumbu Dapur,335ml,SKU-00237,10000,14000,141
+Tepung Terigu 12,Makanan Kaleng,1kg,SKU-00238,12000,15000,148
+Telur Ayam 12,Perawatan Diri,1kg,SKU-00239,27000,32000,155
+Tisu Wajah 12,Kebersihan,200 sheets,SKU-00240,9000,13000,162
+Indomie Goreng 13,Mie Instan,85g,SKU-00241,2500,3500,169
+Indomie Soto 13,Minuman,75g,SKU-00242,2500,3500,176
+Aqua 13,Snack,600ml,SKU-00243,2500,4000,183
+Teh Botol Sosro 13,Sembako,450ml,SKU-00244,3500,5000,190
+Kopi Kapal Api 13,Susu,65g,SKU-00245,7000,9500,197
+Beras Premium 13,Kopi & Teh,5kg,SKU-00246,65000,75000,13
+Gula Pasir 13,Bumbu Dapur,1kg,SKU-00247,14500,17000,20
+Minyak Goreng 13,Makanan Kaleng,1L,SKU-00248,17000,20000,27
+Susu UHT 13,Perawatan Diri,1L,SKU-00249,18000,22000,34
+Sabun Mandi 13,Kebersihan,100g,SKU-00250,3500,5000,41
+Shampoo 13,Mie Instan,170ml,SKU-00251,18000,23000,48
+Pasta Gigi 13,Minuman,120g,SKU-00252,11000,15000,55
+Biskuit 13,Snack,120g,SKU-00253,6500,9000,62
+Keripik Kentang 13,Sembako,68g,SKU-00254,9000,12000,69
+Sarden Kaleng 13,Susu,155g,SKU-00255,12000,16000,76
+Kecap Manis 13,Kopi & Teh,600ml,SKU-00256,14000,18000,83
+Saus Sambal 13,Bumbu Dapur,335ml,SKU-00257,10000,14000,90
+Tepung Terigu 13,Makanan Kaleng,1kg,SKU-00258,12000,15000,97
+Telur Ayam 13,Perawatan Diri,1kg,SKU-00259,27000,32000,104
+Tisu Wajah 13,Kebersihan,200 sheets,SKU-00260,9000,13000,111
+Indomie Goreng 14,Mie Instan,85g,SKU-00261,2500,3500,118
+Indomie Soto 14,Minuman,75g,SKU-00262,2500,3500,125
+Aqua 14,Snack,600ml,SKU-00263,2500,4000,132
+Teh Botol Sosro 14,Sembako,450ml,SKU-00264,3500,5000,139
+Kopi Kapal Api 14,Susu,65g,SKU-00265,7000,9500,146
+Beras Premium 14,Kopi & Teh,5kg,SKU-00266,65000,75000,153
+Gula Pasir 14,Bumbu Dapur,1kg,SKU-00267,14500,17000,160
+Minyak Goreng 14,Makanan Kaleng,1L,SKU-00268,17000,20000,167
+Susu UHT 14,Perawatan Diri,1L,SKU-00269,18000,22000,174
+Sabun Mandi 14,Kebersihan,100g,SKU-00270,3500,5000,181
+Shampoo 14,Mie Instan,170ml,SKU-00271,18000,23000,188
+Pasta Gigi 14,Minuman,120g,SKU-00272,11000,15000,195
+Biskuit 14,Snack,120g,SKU-00273,6500,9000,11
+Keripik Kentang 14,Sembako,68g,SKU-00274,9000,12000,18
+Sarden Kaleng 14,Susu,155g,SKU-00275,12000,16000,25
+Kecap Manis 14,Kopi & Teh,600ml,SKU-00276,14000,18000,32
+Saus Sambal 14,Bumbu Dapur,335ml,SKU-00277,10000,14000,39
+Tepung Terigu 14,Makanan Kaleng,1kg,SKU-00278,12000,15000,46
+Telur Ayam 14,Perawatan Diri,1kg,SKU-00279,27000,32000,53
+Tisu Wajah 14,Kebersihan,200 sheets,SKU-00280,9000,13000,60
+Indomie Goreng 15,Mie Instan,85g,SKU-00281,2500,3500,67
+Indomie Soto 15,Minuman,75g,SKU-00282,2500,3500,74
+Aqua 15,Snack,600ml,SKU-00283,2500,4000,81
+Teh Botol Sosro 15,Sembako,450ml,SKU-00284,3500,5000,88
+Kopi Kapal Api 15,Susu,65g,SKU-00285,7000,9500,95
+Beras Premium 15,Kopi & Teh,5kg,SKU-00286,65000,75000,102
+Gula Pasir 15,Bumbu Dapur,1kg,SKU-00287,14500,17000,109
+Minyak Goreng 15,Makanan Kaleng,1L,SKU-00288,17000,20000,116
+Susu UHT 15,Perawatan Diri,1L,SKU-00289,18000,22000,123
+Sabun Mandi 15,Kebersihan,100g,SKU-00290,3500,5000,130
+Shampoo 15,Mie Instan,170ml,SKU-00291,18000,23000,137
+Pasta Gigi 15,Minuman,120g,SKU-00292,11000,15000,144
+Biskuit 15,Snack,120g,SKU-00293,6500,9000,151
+Keripik Kentang 15,Sembako,68g,SKU-00294,9000,12000,158
+Sarden Kaleng 15,Susu,155g,SKU-00295,12000,16000,165
+Kecap Manis 15,Kopi & Teh,600ml,SKU-00296,14000,18000,172
+Saus Sambal 15,Bumbu Dapur,335ml,SKU-00297,10000,14000,179
+Tepung Terigu 15,Makanan Kaleng,1kg,SKU-00298,12000,15000,186
+Telur Ayam 15,Perawatan Diri,1kg,SKU-00299,27000,32000,193
+Tisu Wajah 15,Kebersihan,200 sheets,SKU-00300,9000,13000,200
+Indomie Goreng 16,Mie Instan,85g,SKU-00301,2500,3500,16
+Indomie Soto 16,Minuman,75g,SKU-00302,2500,3500,23
+Aqua 16,Snack,600ml,SKU-00303,2500,4000,30
+Teh Botol Sosro 16,Sembako,450ml,SKU-00304,3500,5000,37
+Kopi Kapal Api 16,Susu,65g,SKU-00305,7000,9500,44
+Beras Premium 16,Kopi & Teh,5kg,SKU-00306,65000,75000,51
+Gula Pasir 16,Bumbu Dapur,1kg,SKU-00307,14500,17000,58
+Minyak Goreng 16,Makanan Kaleng,1L,SKU-00308,17000,20000,65
+Susu UHT 16,Perawatan Diri,1L,SKU-00309,18000,22000,72
+Sabun Mandi 16,Kebersihan,100g,SKU-00310,3500,5000,79
+Shampoo 16,Mie Instan,170ml,SKU-00311,18000,23000,86
+Pasta Gigi 16,Minuman,120g,SKU-00312,11000,15000,93
+Biskuit 16,Snack,120g,SKU-00313,6500,9000,100
+Keripik Kentang 16,Sembako,68g,SKU-00314,9000,12000,107
+Sarden Kaleng 16,Susu,155g,SKU-00315,12000,16000,114
+Kecap Manis 16,Kopi & Teh,600ml,SKU-00316,14000,18000,121
+Saus Sambal 16,Bumbu Dapur,335ml,SKU-00317,10000,14000,128
+Tepung Terigu 16,Makanan Kaleng,1kg,SKU-00318,12000,15000,135
+Telur Ayam 16,Perawatan Diri,1kg,SKU-00319,27000,32000,142
+Tisu Wajah 16,Kebersihan,200 sheets,SKU-00320,9000,13000,149
+Indomie Goreng 17,Mie Instan,85g,SKU-00321,2500,3500,156
+Indomie Soto 17,Minuman,75g,SKU-00322,2500,3500,163
+Aqua 17,Snack,600ml,SKU-00323,2500,4000,170
+Teh Botol Sosro 17,Sembako,450ml,SKU-00324,3500,5000,177
+Kopi Kapal Api 17,Susu,65g,SKU-00325,7000,9500,184
+Beras Premium 17,Kopi & Teh,5kg,SKU-00326,65000,75000,191
+Gula Pasir 17,Bumbu Dapur,1kg,SKU-00327,14500,17000,198
+Minyak Goreng 17,Makanan Kaleng,1L,SKU-00328,17000,20000,14
+Susu UHT 17,Perawatan Diri,1L,SKU-00329,18000,22000,21
+Sabun Mandi 17,Kebersihan,100g,SKU-00330,3500,5000,28
+Shampoo 17,Mie Instan,170ml,SKU-00331,18000,23000,35
+Pasta Gigi 17,Minuman,120g,SKU-00332,11000,15000,42
+Biskuit 17,Snack,120g,SKU-00333,6500,9000,49
+Keripik Kentang 17,Sembako,68g,SKU-00334,9000,12000,56
+Sarden Kaleng 17,Susu,155g,SKU-00335,12000,16000,63
+Kecap Manis 17,Kopi & Teh,600ml,SKU-00336,14000,18000,70
+Saus Sambal 17,Bumbu Dapur,335ml,SKU-00337,10000,14000,77
+Tepung Terigu 17,Makanan Kaleng,1kg,SKU-00338,12000,15000,84
+Telur Ayam 17,Perawatan Diri,1kg,SKU-00339,27000,32000,91
+Tisu Wajah 17,Kebersihan,200 sheets,SKU-00340,9000,13000,98
+Indomie Goreng 18,Mie Instan,85g,SKU-00341,2500,3500,105
+Indomie Soto 18,Minuman,75g,SKU-00342,2500,3500,112
+Aqua 18,Snack,600ml,SKU-00343,2500,4000,119
+Teh Botol Sosro 18,Sembako,450ml,SKU-00344,3500,5000,126
+Kopi Kapal Api 18,Susu,65g,SKU-00345,7000,9500,133
+Beras Premium 18,Kopi & Teh,5kg,SKU-00346,65000,75000,140
+Gula Pasir 18,Bumbu Dapur,1kg,SKU-00347,14500,17000,147
+Minyak Goreng 18,Makanan Kaleng,1L,SKU-00348,17000,20000,154
+Susu UHT 18,Perawatan Diri,1L,SKU-00349,18000,22000,161
+Sabun Mandi 18,Kebersihan,100g,SKU-00350,3500,5000,168
+Shampoo 18,Mie Instan,170ml,SKU-00351,18000,23000,175
+Pasta Gigi 18,Minuman,120g,SKU-00352,11000,15000,182
+Biskuit 18,Snack,120g,SKU-00353,6500,9000,189
+Keripik Kentang 18,Sembako,68g,SKU-00354,9000,12000,196
+Sarden Kaleng 18,Susu,155g,SKU-00355,12000,16000,12
+Kecap Manis 18,Kopi & Teh,600ml,SKU-00356,14000,18000,19
+Saus Sambal 18,Bumbu Dapur,335ml,SKU-00357,10000,14000,26
+Tepung Terigu 18,Makanan Kaleng,1kg,SKU-00358,12000,15000,33
+Telur Ayam 18,Perawatan Diri,1kg,SKU-00359,27000,32000,40
+Tisu Wajah 18,Kebersihan,200 sheets,SKU-00360,9000,13000,47
+Indomie Goreng 19,Mie Instan,85g,SKU-00361,2500,3500,54
+Indomie Soto 19,Minuman,75g,SKU-00362,2500,3500,61
+Aqua 19,Snack,600ml,SKU-00363,2500,4000,68
+Teh Botol Sosro 19,Sembako,450ml,SKU-00364,3500,5000,75
+Kopi Kapal Api 19,Susu,65g,SKU-00365,7000,9500,82
+Beras Premium 19,Kopi & Teh,5kg,SKU-00366,65000,75000,89
+Gula Pasir 19,Bumbu Dapur,1kg,SKU-00367,14500,17000,96
+Minyak Goreng 19,Makanan Kaleng,1L,SKU-00368,17000,20000,103
+Susu UHT 19,Perawatan Diri,1L,SKU-00369,18000,22000,110
+Sabun Mandi 19,Kebersihan,100g,SKU-00370,3500,5000,117
+Shampoo 19,Mie Instan,170ml,SKU-00371,18000,23000,124
+Pasta Gigi 19,Minuman,120g,SKU-00372,11000,15000,131
+Biskuit 19,Snack,120g,SKU-00373,6500,9000,138
+Keripik Kentang 19,Sembako,68g,SKU-00374,9000,12000,145
+Sarden Kaleng 19,Susu,155g,SKU-00375,12000,16000,152
+Kecap Manis 19,Kopi & Teh,600ml,SKU-00376,14000,18000,159
+Saus Sambal 19,Bumbu Dapur,335ml,SKU-00377,10000,14000,166
+Tepung Terigu 19,Makanan Kaleng,1kg,SKU-00378,12000,15000,173
+Telur Ayam 19,Perawatan Diri,1kg,SKU-00379,27000,32000,180
+Tisu Wajah 19,Kebersihan,200 sheets,SKU-00380,9000,13000,187
+Indomie Goreng 20,Mie Instan,85g,SKU-00381,2500,3500,194
+Indomie Soto 20,Minuman,75g,SKU-00382,2500,3500,10
+Aqua 20,Snack,600ml,SKU-00383,2500,4000,17
+Teh Botol Sosro 20,Sembako,450ml,SKU-00384,3500,5000,24
+Kopi Kapal Api 20,Susu,65g,SKU-00385,7000,9500,31
+Beras Premium 20,Kopi & Teh,5kg,SKU-00386,65000,75000,38
+Gula Pasir 20,Bumbu Dapur,1kg,SKU-00387,14500,17000,45
+Minyak Goreng 20,Makanan Kaleng,1L,SKU-00388,17000,20000,52
+Susu UHT 20,Perawatan Diri,1L,SKU-00389,18000,22000,59
+Sabun Mandi 20,Kebersihan,100g,SKU-00390,3500,5000,66
+Shampoo 20,Mie Instan,170ml,SKU-00391,18000,23000,73
+Pasta Gigi 20,Minuman,120g,SKU-00392,11000,15000,80
+Biskuit 20,Snack,120g,SKU-00393,6500,9000,87
+Keripik Kentang 20,Sembako,68g,SKU-00394,9000,12000,94
+Sarden Kaleng 20,Susu,155g,SKU-00395,12000,16000,101
+Kecap Manis 20,Kopi & Teh,600ml,SKU-00396,14000,18000,108
+Saus Sambal 20,Bumbu Dapur,335ml,SKU-00397,10000,14000,115
+Tepung Terigu 20,Makanan Kaleng,1kg,SKU-00398,12000,15000,122
+Telur Ayam 20,Perawatan Diri,1kg,SKU-00399,27000,32000,129
+Tisu Wajah 20,Kebersihan,200 sheets,SKU-00400,9000,13000,136
+Indomie Goreng 21,Mie Instan,85g,SKU-00401,2500,3500,143
+Indomie Soto 21,Minuman,75g,SKU-00402,2500,3500,150
+Aqua 21,Snack,600ml,SKU-00403,2500,4000,157
+Teh Botol Sosro 21,Sembako,450ml,SKU-00404,3500,5000,164
+Kopi Kapal Api 21,Susu,65g,SKU-00405,7000,9500,171
+Beras Premium 21,Kopi & Teh,5kg,SKU-00406,65000,75000,178
+Gula Pasir 21,Bumbu Dapur,1kg,SKU-00407,14500,17000,185
+Minyak Goreng 21,Makanan Kaleng,1L,SKU-00408,17000,20000,192
+Susu UHT 21,Perawatan Diri,1L,SKU-00409,18000,22000,199
+Sabun Mandi 21,Kebersihan,100g,SKU-00410,3500,5000,15
+Shampoo 21,Mie Instan,170ml,SKU-00411,18000,23000,22
+Pasta Gigi 21,Minuman,120g,SKU-00412,11000,15000,29
+Biskuit 21,Snack,120g,SKU-00413,6500,9000,36
+Keripik Kentang 21,Sembako,68g,SKU-00414,9000,12000,43
+Sarden Kaleng 21,Susu,155g,SKU-00415,12000,16000,50
+Kecap Manis 21,Kopi & Teh,600ml,SKU-00416,14000,18000,57
+Saus Sambal 21,Bumbu Dapur,335ml,SKU-00417,10000,14000,64
+Tepung Terigu 21,Makanan Kaleng,1kg,SKU-00418,12000,15000,71
+Telur Ayam 21,Perawatan Diri,1kg,SKU-00419,27000,32000,78
+Tisu Wajah 21,Kebersihan,200 sheets,SKU-00420,9000,13000,85
+Indomie Goreng 22,Mie Instan,85g,SKU-00421,2500,3500,92
+Indomie Soto 22,Minuman,75g,SKU-00422,2500,3500,99
+Aqua 22,Snack,600ml,SKU-00423,2500,4000,106
+Teh Botol Sosro 22,Sembako,450ml,SKU-00424,3500,5000,113
+Kopi Kapal Api 22,Susu,65g,SKU-00425,7000,9500,120
+Beras Premium 22,Kopi & Teh,5kg,SKU-00426,65000,75000,127
+Gula Pasir 22,Bumbu Dapur,1kg,SKU-00427,14500,17000,134
+Minyak Goreng 22,Makanan Kaleng,1L,SKU-00428,17000,20000,141
+Susu UHT 22,Perawatan Diri,1L,SKU-00429,18000,22000,148
+Sabun Mandi 22,Kebersihan,100g,SKU-00430,3500,5000,155
+Shampoo 22,Mie Instan,170ml,SKU-00431,18000,23000,162
+Pasta Gigi 22,Minuman,120g,SKU-00432,11000,15000,169
+Biskuit 22,Snack,120g,SKU-00433,6500,9000,176
+Keripik Kentang 22,Sembako,68g,SKU-00434,9000,12000,183
+Sarden Kaleng 22,Susu,155g,SKU-00435,12000,16000,190
+Kecap Manis 22,Kopi & Teh,600ml,SKU-00436,14000,18000,197
+Saus Sambal 22,Bumbu Dapur,335ml,SKU-00437,10000,14000,13
+Tepung Terigu 22,Makanan Kaleng,1kg,SKU-00438,12000,15000,20
+Telur Ayam 22,Perawatan Diri,1kg,SKU-00439,27000,32000,27
+Tisu Wajah 22,Kebersihan,200 sheets,SKU-00440,9000,13000,34
+Indomie Goreng 23,Mie Instan,85g,SKU-00441,2500,3500,41
+Indomie Soto 23,Minuman,75g,SKU-00442,2500,3500,48
+Aqua 23,Snack,600ml,SKU-00443,2500,4000,55
+Teh Botol Sosro 23,Sembako,450ml,SKU-00444,3500,5000,62
+Kopi Kapal Api 23,Susu,65g,SKU-00445,7000,9500,69
+Beras Premium 23,Kopi & Teh,5kg,SKU-00446,65000,75000,76
+Gula Pasir 23,Bumbu Dapur,1kg,SKU-00447,14500,17000,83
+Minyak Goreng 23,Makanan Kaleng,1L,SKU-00448,17000,20000,90
+Susu UHT 23,Perawatan Diri,1L,SKU-00449,18000,22000,97
+Sabun Mandi 23,Kebersihan,100g,SKU-00450,3500,5000,104
+Shampoo 23,Mie Instan,170ml,SKU-00451,18000,23000,111
+Pasta Gigi 23,Minuman,120g,SKU-00452,11000,15000,118
+Biskuit 23,Snack,120g,SKU-00453,6500,9000,125
+Keripik Kentang 23,Sembako,68g,SKU-00454,9000,12000,132
+Sarden Kaleng 23,Susu,155g,SKU-00455,12000,16000,139
+Kecap Manis 23,Kopi & Teh,600ml,SKU-00456,14000,18000,146
+Saus Sambal 23,Bumbu Dapur,335ml,SKU-00457,10000,14000,153
+Tepung Terigu 23,Makanan Kaleng,1kg,SKU-00458,12000,15000,160
+Telur Ayam 23,Perawatan Diri,1kg,SKU-00459,27000,32000,167
+Tisu Wajah 23,Kebersihan,200 sheets,SKU-00460,9000,13000,174
+Indomie Goreng 24,Mie Instan,85g,SKU-00461,2500,3500,181
+Indomie Soto 24,Minuman,75g,SKU-00462,2500,3500,188
+Aqua 24,Snack,600ml,SKU-00463,2500,4000,195
+Teh Botol Sosro 24,Sembako,450ml,SKU-00464,3500,5000,11
+Kopi Kapal Api 24,Susu,65g,SKU-00465,7000,9500,18
+Beras Premium 24,Kopi & Teh,5kg,SKU-00466,65000,75000,25
+Gula Pasir 24,Bumbu Dapur,1kg,SKU-00467,14500,17000,32
+Minyak Goreng 24,Makanan Kaleng,1L,SKU-00468,17000,20000,39
+Susu UHT 24,Perawatan Diri,1L,SKU-00469,18000,22000,46
+Sabun Mandi 24,Kebersihan,100g,SKU-00470,3500,5000,53
+Shampoo 24,Mie Instan,170ml,SKU-00471,18000,23000,60
+Pasta Gigi 24,Minuman,120g,SKU-00472,11000,15000,67
+Biskuit 24,Snack,120g,SKU-00473,6500,9000,74
+Keripik Kentang 24,Sembako,68g,SKU-00474,9000,12000,81
+Sarden Kaleng 24,Susu,155g,SKU-00475,12000,16000,88
+Kecap Manis 24,Kopi & Teh,600ml,SKU-00476,14000,18000,95
+Saus Sambal 24,Bumbu Dapur,335ml,SKU-00477,10000,14000,102
+Tepung Terigu 24,Makanan Kaleng,1kg,SKU-00478,12000,15000,109
+Telur Ayam 24,Perawatan Diri,1kg,SKU-00479,27000,32000,116
+Tisu Wajah 24,Kebersihan,200 sheets,SKU-00480,9000,13000,123
+Indomie Goreng 25,Mie Instan,85g,SKU-00481,2500,3500,130
+Indomie Soto 25,Minuman,75g,SKU-00482,2500,3500,137
+Aqua 25,Snack,600ml,SKU-00483,2500,4000,144
+Teh Botol Sosro 25,Sembako,450ml,SKU-00484,3500,5000,151
+Kopi Kapal Api 25,Susu,65g,SKU-00485,7000,9500,158
+Beras Premium 25,Kopi & Teh,5kg,SKU-00486,65000,75000,165
+Gula Pasir 25,Bumbu Dapur,1kg,SKU-00487,14500,17000,172
+Minyak Goreng 25,Makanan Kaleng,1L,SKU-00488,17000,20000,179
+Susu UHT 25,Perawatan Diri,1L,SKU-00489,18000,22000,186
+Sabun Mandi 25,Kebersihan,100g,SKU-00490,3500,5000,193
+Shampoo 25,Mie Instan,170ml,SKU-00491,18000,23000,200
+Pasta Gigi 25,Minuman,120g,SKU-00492,11000,15000,16
+Biskuit 25,Snack,120g,SKU-00493,6500,9000,23
+Keripik Kentang 25,Sembako,68g,SKU-00494,9000,12000,30
+Sarden Kaleng 25,Susu,155g,SKU-00495,12000,16000,37
+Kecap Manis 25,Kopi & Teh,600ml,SKU-00496,14000,18000,44
+Saus Sambal 25,Bumbu Dapur,335ml,SKU-00497,10000,14000,51
+Tepung Terigu 25,Makanan Kaleng,1kg,SKU-00498,12000,15000,58
+Telur Ayam 25,Perawatan Diri,1kg,SKU-00499,27000,32000,65
+Tisu Wajah 25,Kebersihan,200 sheets,SKU-00500,9000,13000,72
