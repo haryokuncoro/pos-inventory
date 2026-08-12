@@ -41,7 +41,10 @@ import { createSale } from "@/lib/actions/sales";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 
+// ============================================================
 // TYPES
+// ============================================================
+
 export type SaleProduct = {
     id: string;
     name: string;
@@ -62,7 +65,19 @@ type PaymentMethod =
     | "CARD"
     | "TRANSFER";
 
+type CategoryItem = {
+    id: string;
+    label: string;
+};
+
+type PosPageProps = {
+    products: SaleProduct[];
+    categories?: string[];
+};
+
+// ============================================================
 // HELPERS
+// ============================================================
 
 function formatRupiah(value: number) {
     return new Intl.NumberFormat("id-ID", {
@@ -72,39 +87,643 @@ function formatRupiah(value: number) {
     }).format(value);
 }
 
-// PROPS
+function parseAmount(value: string) {
+    const normalized = value.replace(/,/g, ".").trim();
 
-type PosPageProps = {
-    products: SaleProduct[];
-    categories?: string[];
+    if (!normalized) {
+        return 0;
+    }
+
+    const amount = Number(normalized);
+
+    return Number.isFinite(amount) ? amount : 0;
+}
+
+// ============================================================
+// PAYMENT BUTTON
+// ============================================================
+
+type PaymentButtonProps = {
+    active: boolean;
+    icon: React.ReactNode;
+    label: string;
+    onClick: () => void;
 };
 
-// PAGE
+function PaymentButton({
+    active,
+    icon,
+    label,
+    onClick,
+}: PaymentButtonProps) {
+    return (
+        <Button
+            type="button"
+            variant={active ? "default" : "outline"}
+            className="justify-start"
+            onClick={onClick}
+        >
+            <span className="[&_svg]:size-4">
+                {icon}
+            </span>
+
+            <span className="ml-2">{label}</span>
+
+            {active && (
+                <Check className="ml-auto size-4" />
+            )}
+        </Button>
+    );
+}
+
+// ============================================================
+// PRODUCT CATALOG
+// ============================================================
+
+type ProductCatalogProps = {
+    products: SaleProduct[];
+    filteredProducts: SaleProduct[];
+    categoryList: CategoryItem[];
+    selectedCategory: string;
+    search: string;
+    cart: CartItem[];
+
+    onSearchChange: (value: string) => void;
+    onCategoryChange: (value: string) => void;
+    onAddToCart: (product: SaleProduct) => void;
+};
+
+function ProductCatalog({
+    filteredProducts,
+    categoryList,
+    selectedCategory,
+    search,
+    cart,
+    onSearchChange,
+    onCategoryChange,
+    onAddToCart,
+}: ProductCatalogProps) {
+    return (
+        <section className="flex min-w-0 flex-1 flex-col gap-4">
+            {/* Header */}
+            <div className="space-y-4">
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">
+                        Penjualan
+                    </h1>
+
+                    <p className="text-sm text-muted-foreground">
+                        Pilih produk untuk membuat transaksi.
+                    </p>
+                </div>
+
+                {/* Search */}
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+
+                    <Input
+                        value={search}
+                        onChange={(event) =>
+                            onSearchChange(event.target.value)
+                        }
+                        placeholder="Cari produk atau SKU..."
+                        className="h-11 pl-9"
+                    />
+
+                    {search && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 size-8 -translate-y-1/2"
+                            onClick={() => onSearchChange("")}
+                        >
+                            <X className="size-4" />
+                        </Button>
+                    )}
+                </div>
+
+                {/* Categories */}
+                <Tabs
+                    value={selectedCategory}
+                    onValueChange={onCategoryChange}
+                >
+                    <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto bg-transparent p-0">
+                        {categoryList.map((category) => (
+                            <TabsTrigger
+                                key={category.id}
+                                value={category.id}
+                                className="shrink-0 rounded-full border bg-background px-4"
+                            >
+                                {category.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </Tabs>
+            </div>
+
+            {/* Products */}
+            {filteredProducts.length > 0 ? (
+                <div
+                    className="
+                        grid gap-3
+                        grid-cols-2
+                        sm:grid-cols-3
+                        lg:grid-cols-4
+                        xl:grid-cols-5
+                        2xl:grid-cols-6
+                    "
+                >
+                    {filteredProducts.map((product) => {
+                        const outOfStock =
+                            product.stockQuantity <= 0;
+
+                        const cartItem = cart.find(
+                            (item) => item.id === product.id,
+                        );
+
+                        return (
+                            <Card
+                                key={product.id}
+                                className="flex min-w-0 flex-col overflow-hidden"
+                            >
+                                <CardHeader className="space-y-2 p-4 pb-2">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <Badge
+                                            variant="secondary"
+                                            className="max-w-full truncate"
+                                        >
+                                            {product.category}
+                                        </Badge>
+
+                                        <span
+                                            className={`shrink-0 text-xs ${
+                                                outOfStock
+                                                    ? "text-destructive"
+                                                    : "text-muted-foreground"
+                                            }`}
+                                        >
+                                            {outOfStock
+                                                ? "Habis"
+                                                : `Stok ${product.stockQuantity}`}
+                                        </span>
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <h3
+                                            className="truncate font-medium"
+                                            title={product.name}
+                                        >
+                                            {product.name}
+                                        </h3>
+
+                                        <p
+                                            className="truncate text-sm text-muted-foreground"
+                                            title={product.variantName}
+                                        >
+                                            {product.variantName}
+                                        </p>
+                                    </div>
+                                </CardHeader>
+
+                                <CardContent className="flex-1 p-4 pt-2">
+                                    <p className="text-lg font-semibold">
+                                        {formatRupiah(
+                                            product.sellingPrice,
+                                        )}
+                                    </p>
+
+                                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                                        SKU: {product.sku}
+                                    </p>
+                                </CardContent>
+
+                                <CardFooter className="p-4 pt-0">
+                                    <Button
+                                        className="w-full"
+                                        disabled={outOfStock}
+                                        onClick={() =>
+                                            onAddToCart(product)
+                                        }
+                                    >
+                                        {cartItem ? (
+                                            <>
+                                                <Check className="mr-2 size-4" />
+                                                {cartItem.quantity} di keranjang
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="mr-2 size-4" />
+                                                Tambah
+                                            </>
+                                        )}
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div className="flex min-h-64 items-center justify-center rounded-xl border border-dashed">
+                    <div className="text-center">
+                        <p className="font-medium">
+                            Produk tidak ditemukan
+                        </p>
+
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Coba ubah kata kunci atau kategori.
+                        </p>
+                    </div>
+                </div>
+            )}
+        </section>
+    );
+}
+
+// ============================================================
+// CART CONTENT
+// ============================================================
+
+type CartContentProps = {
+    cart: CartItem[];
+
+    subtotal: number;
+    discount: number;
+    tax: number;
+    total: number;
+
+    paymentMethod: PaymentMethod;
+    cashReceivedInput: string;
+    cashReceived: number;
+    changeAmount: number;
+
+    isSubmitting: boolean;
+
+    onPaymentMethodChange: (
+        method: PaymentMethod,
+    ) => void;
+
+    onCashReceivedChange: (
+        value: string,
+    ) => void;
+
+    onIncreaseQuantity: (id: string) => void;
+    onDecreaseQuantity: (id: string) => void;
+    onRemoveFromCart: (id: string) => void;
+    onClearCart: () => void;
+    onCheckout: () => void;
+};
+
+function CartContent({
+    cart,
+    subtotal,
+    discount,
+    tax,
+    total,
+    paymentMethod,
+    cashReceivedInput,
+    cashReceived,
+    changeAmount,
+    isSubmitting,
+    onPaymentMethodChange,
+    onCashReceivedChange,
+    onIncreaseQuantity,
+    onDecreaseQuantity,
+    onRemoveFromCart,
+    onClearCart,
+    onCheckout,
+}: CartContentProps) {
+    return (
+        <div className="flex min-h-0 flex-1 flex-col">
+            {/* Cart items */}
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                {cart.length === 0 ? (
+                    <div className="flex h-64 flex-col items-center justify-center text-center">
+                        <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+                            <ShoppingCart className="size-6 text-muted-foreground" />
+                        </div>
+
+                        <p className="mt-4 font-medium">
+                            Keranjang kosong
+                        </p>
+
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Tambahkan produk ke transaksi.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {cart.map((item) => (
+                            <div
+                                key={item.id}
+                                className="space-y-3"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="truncate font-medium">
+                                            {item.name}
+                                        </p>
+
+                                        <p className="truncate text-sm text-muted-foreground">
+                                            {item.variantName}
+                                        </p>
+                                    </div>
+
+                                    <p className="shrink-0 font-medium">
+                                        {formatRupiah(
+                                            item.sellingPrice *
+                                                item.quantity,
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center rounded-md border">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="size-8"
+                                            onClick={() =>
+                                                onDecreaseQuantity(
+                                                    item.id,
+                                                )
+                                            }
+                                        >
+                                            <Minus className="size-3.5" />
+                                        </Button>
+
+                                        <span className="w-9 text-center text-sm font-medium">
+                                            {item.quantity}
+                                        </span>
+
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="size-8"
+                                            disabled={
+                                                item.quantity >=
+                                                item.stockQuantity
+                                            }
+                                            onClick={() =>
+                                                onIncreaseQuantity(
+                                                    item.id,
+                                                )
+                                            }
+                                        >
+                                            <Plus className="size-3.5" />
+                                        </Button>
+                                    </div>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="size-8 text-muted-foreground hover:text-destructive"
+                                        onClick={() =>
+                                            onRemoveFromCart(
+                                                item.id,
+                                            )
+                                        }
+                                    >
+                                        <Trash2 className="size-4" />
+                                    </Button>
+                                </div>
+
+                                <Separator />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Summary */}
+            <div className="space-y-4 border-t p-4">
+                <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                            Subtotal
+                        </span>
+
+                        <span>
+                            {formatRupiah(subtotal)}
+                        </span>
+                    </div>
+
+                    <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                            Diskon
+                        </span>
+
+                        <span>
+                            {formatRupiah(discount)}
+                        </span>
+                    </div>
+
+                    <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                            Pajak
+                        </span>
+
+                        <span>
+                            {formatRupiah(tax)}
+                        </span>
+                    </div>
+
+                    <Separator />
+
+                    <div className="flex items-end justify-between gap-4">
+                        <span className="font-semibold">
+                            Total
+                        </span>
+
+                        <span className="text-2xl font-bold">
+                            {formatRupiah(total)}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Payment method */}
+                <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                        Pembayaran
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2">
+                        <PaymentButton
+                            active={
+                                paymentMethod === "CASH"
+                            }
+                            icon={<Banknote />}
+                            label="Tunai"
+                            onClick={() =>
+                                onPaymentMethodChange(
+                                    "CASH",
+                                )
+                            }
+                        />
+
+                        <PaymentButton
+                            active={
+                                paymentMethod === "QRIS"
+                            }
+                            icon={<QrCode />}
+                            label="QRIS"
+                            onClick={() =>
+                                onPaymentMethodChange(
+                                    "QRIS",
+                                )
+                            }
+                        />
+
+                        <PaymentButton
+                            active={
+                                paymentMethod === "CARD"
+                            }
+                            icon={<CreditCard />}
+                            label="Kartu"
+                            onClick={() =>
+                                onPaymentMethodChange(
+                                    "CARD",
+                                )
+                            }
+                        />
+
+                        <PaymentButton
+                            active={
+                                paymentMethod ===
+                                "TRANSFER"
+                            }
+                            icon={<WalletCards />}
+                            label="Transfer"
+                            onClick={() =>
+                                onPaymentMethodChange(
+                                    "TRANSFER",
+                                )
+                            }
+                        />
+                    </div>
+
+                    {paymentMethod === "CASH" && (
+                        <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                            <div className="space-y-2">
+                                <label
+                                    htmlFor="cash-received"
+                                    className="text-sm font-medium"
+                                >
+                                    Uang pelanggan
+                                </label>
+
+                                <Input
+                                    id="cash-received"
+                                    type="number"
+                                    min={
+                                        total > 0
+                                            ? total
+                                            : 0
+                                    }
+                                    step="1000"
+                                    inputMode="numeric"
+                                    placeholder="Masukkan nominal bayar"
+                                    value={
+                                        cashReceivedInput
+                                    }
+                                    onChange={(event) =>
+                                        onCashReceivedChange(
+                                            event.target
+                                                .value,
+                                        )
+                                    }
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                    Kembalian
+                                </span>
+
+                                <span className="font-medium">
+                                    {formatRupiah(
+                                        changeAmount,
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <Button
+                    className="h-12 w-full text-base"
+                    disabled={
+                        cart.length === 0 ||
+                        isSubmitting ||
+                        (paymentMethod === "CASH" &&
+                            cashReceived < total)
+                    }
+                    onClick={onCheckout}
+                >
+                    {isSubmitting
+                        ? "Memproses..."
+                        : `Bayar ${formatRupiah(total)}`}
+                </Button>
+
+                {cart.length > 0 && (
+                    <Button
+                        variant="ghost"
+                        className="w-full text-muted-foreground"
+                        onClick={onClearCart}
+                    >
+                        Kosongkan keranjang
+                    </Button>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ============================================================
+// POS PAGE
+// ============================================================
+
 export function PosPage({
     products,
     categories = [],
 }: PosPageProps) {
+    // --------------------------------------------------------
+    // STATE
+    // --------------------------------------------------------
+
     const [search, setSearch] = React.useState("");
     const [selectedCategory, setSelectedCategory] =
         React.useState("ALL");
 
-    const [cart, setCart] = React.useState<CartItem[]>([]);
+    const [cart, setCart] = React.useState<CartItem[]>(
+        [],
+    );
 
     const [paymentMethod, setPaymentMethod] =
         React.useState<PaymentMethod>("CASH");
 
+    const [cashReceivedInput, setCashReceivedInput] =
+        React.useState("");
+
     const [cartOpen, setCartOpen] =
         React.useState(false);
-    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+    const [isSubmitting, setIsSubmitting] =
+        React.useState(false);
+
+    // --------------------------------------------------------
     // CATEGORIES
+    // --------------------------------------------------------
 
     const categoryList = React.useMemo(() => {
         const uniqueCategories = Array.from(
             new Set(
                 categories.length > 0
                     ? categories
-                    : products.map((product) => product.category),
+                    : products.map(
+                          (product) =>
+                              product.category,
+                      ),
             ),
         );
 
@@ -120,15 +739,20 @@ export function PosPage({
         ];
     }, [categories, products]);
 
+    // --------------------------------------------------------
     // FILTER PRODUCTS
+    // --------------------------------------------------------
 
     const filteredProducts = React.useMemo(() => {
-        const keyword = search.trim().toLowerCase();
+        const keyword = search
+            .trim()
+            .toLowerCase();
 
         return products.filter((product) => {
             const matchesCategory =
                 selectedCategory === "ALL" ||
-                product.category === selectedCategory;
+                product.category ===
+                    selectedCategory;
 
             if (!keyword) {
                 return matchesCategory;
@@ -145,11 +769,19 @@ export function PosPage({
                     .toLowerCase()
                     .includes(keyword);
 
-            return matchesCategory && matchesSearch;
+            return (
+                matchesCategory && matchesSearch
+            );
         });
-    }, [products, search, selectedCategory]);
+    }, [
+        products,
+        search,
+        selectedCategory,
+    ]);
 
+    // --------------------------------------------------------
     // CART
+    // --------------------------------------------------------
 
     function addToCart(product: SaleProduct) {
         if (product.stockQuantity <= 0) {
@@ -181,9 +813,10 @@ export function PosPage({
             return current.map((item) =>
                 item.id === product.id
                     ? {
-                        ...item,
-                        quantity: item.quantity + 1,
-                    }
+                          ...item,
+                          quantity:
+                              item.quantity + 1,
+                      }
                     : item,
             );
         });
@@ -217,35 +850,57 @@ export function PosPage({
                 .map((item) =>
                     item.id === id
                         ? {
-                            ...item,
-                            quantity: item.quantity - 1,
-                        }
+                              ...item,
+                              quantity:
+                                  item.quantity - 1,
+                          }
                         : item,
                 )
-                .filter((item) => item.quantity > 0),
+                .filter(
+                    (item) => item.quantity > 0,
+                ),
         );
     }
 
     function removeFromCart(id: string) {
         setCart((current) =>
-            current.filter((item) => item.id !== id),
+            current.filter(
+                (item) => item.id !== id,
+            ),
         );
     }
 
     function clearCart() {
         setCart([]);
+        setCashReceivedInput("");
     }
+
+    // --------------------------------------------------------
+    // CHECKOUT
+    // --------------------------------------------------------
 
     async function handleCheckout() {
         if (cart.length === 0) {
             return;
         }
 
+        if (paymentMethod === "CASH") {
+            if (cashReceived < total) {
+                toast.error(
+                    "Uang bayar kurang dari total belanja.",
+                );
+                return;
+            }
+        }
+
         setIsSubmitting(true);
 
         try {
-            const session = await authClient.getSession();
-            const cashierId = session.data?.user?.id;
+            const session =
+                await authClient.getSession();
+
+            const cashierId =
+                session.data?.user?.id;
 
             const result = await createSale({
                 cashierId,
@@ -264,7 +919,10 @@ export function PosPage({
                 return;
             }
 
-            toast.success(`Transaksi berhasil: ${result.invoiceNumber}`);
+            toast.success(
+                `Transaksi berhasil: ${result.invoiceNumber}`,
+            );
+
             clearCart();
         } catch (error) {
             toast.error(
@@ -277,439 +935,81 @@ export function PosPage({
         }
     }
 
+    // --------------------------------------------------------
     // TOTALS
+    // --------------------------------------------------------
 
     const totalItems = cart.reduce(
-        (sum, item) => sum + item.quantity,
+        (sum, item) =>
+            sum + item.quantity,
         0,
     );
 
     const subtotal = cart.reduce(
         (sum, item) =>
-            sum + item.sellingPrice * item.quantity,
+            sum +
+            item.sellingPrice *
+                item.quantity,
         0,
     );
 
     const discount = 0;
     const tax = 0;
+
     const total =
         subtotal - discount + tax;
 
-    // PRODUCT CATALOG
+    const cashReceived =
+        parseAmount(cashReceivedInput);
 
-    function ProductCatalog() {
-        return (
-            <section className="flex min-w-0 flex-1 flex-col gap-4">
-                {/* Header */}
-                <div className="space-y-4">
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
-                            Penjualan
-                        </h1>
+    const changeAmount = Math.max(
+        cashReceived - total,
+        0,
+    );
 
-                        <p className="text-sm text-muted-foreground">
-                            Pilih produk untuk membuat transaksi.
-                        </p>
-                    </div>
+    // --------------------------------------------------------
+    // SHARED CART PROPS
+    // --------------------------------------------------------
 
-                    {/* Search */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+    const cartContentProps: CartContentProps = {
+        cart,
+        subtotal,
+        discount,
+        tax,
+        total,
+        paymentMethod,
+        cashReceivedInput,
+        cashReceived,
+        changeAmount,
+        isSubmitting,
 
-                        <Input
-                            value={search}
-                            onChange={(event) =>
-                                setSearch(event.target.value)
-                            }
-                            placeholder="Cari produk atau SKU..."
-                            className="h-11 pl-9"
-                        />
+        onPaymentMethodChange:
+            setPaymentMethod,
 
-                        {search && (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute right-1 top-1/2 size-8 -translate-y-1/2"
-                                onClick={() => setSearch("")}
-                            >
-                                <X className="size-4" />
-                            </Button>
-                        )}
-                    </div>
+        onCashReceivedChange:
+            setCashReceivedInput,
 
-                    {/* Categories */}
-                    <Tabs
-                        value={selectedCategory}
-                        onValueChange={setSelectedCategory}
-                    >
-                        <TabsList className="h-auto w-full justify-start gap-2 overflow-x-auto bg-transparent p-0">
-                            {categoryList.map((category) => (
-                                <TabsTrigger
-                                    key={category.id}
-                                    value={category.id}
-                                    className="shrink-0 rounded-full border bg-background px-4"
-                                >
-                                    {category.label}
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
-                </div>
+        onIncreaseQuantity:
+            increaseQuantity,
 
-                {/* Products */}
-                {filteredProducts.length > 0 ? (
-                    <div
-                        className="
-              grid gap-3
-              grid-cols-2
-              sm:grid-cols-3
-              lg:grid-cols-4
-              xl:grid-cols-5
-              2xl:grid-cols-6
-            "
-                    >
-                        {filteredProducts.map((product) => {
-                            const outOfStock =
-                                product.stockQuantity <= 0;
+        onDecreaseQuantity:
+            decreaseQuantity,
 
-                            const cartItem = cart.find(
-                                (item) => item.id === product.id,
-                            );
+        onRemoveFromCart:
+            removeFromCart,
 
-                            return (
-                                <Card
-                                    key={product.id}
-                                    className="flex min-w-0 flex-col overflow-hidden"
-                                >
-                                    <CardHeader className="space-y-2 p-4 pb-2">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <Badge
-                                                variant="secondary"
-                                                className="max-w-full truncate"
-                                            >
-                                                {product.category}
-                                            </Badge>
+        onClearCart: clearCart,
 
-                                            <span
-                                                className={`shrink-0 text-xs ${outOfStock
-                                                    ? "text-destructive"
-                                                    : "text-muted-foreground"
-                                                    }`}
-                                            >
-                                                {outOfStock
-                                                    ? "Habis"
-                                                    : `Stok ${product.stockQuantity}`}
-                                            </span>
-                                        </div>
+        onCheckout: handleCheckout,
+    };
 
-                                        <div className="min-w-0">
-                                            <h3
-                                                className="truncate font-medium"
-                                                title={product.name}
-                                            >
-                                                {product.name}
-                                            </h3>
-
-                                            <p
-                                                className="truncate text-sm text-muted-foreground"
-                                                title={product.variantName}
-                                            >
-                                                {product.variantName}
-                                            </p>
-                                        </div>
-                                    </CardHeader>
-
-                                    <CardContent className="flex-1 p-4 pt-2">
-                                        <p className="text-lg font-semibold">
-                                            {formatRupiah(
-                                                product.sellingPrice,
-                                            )}
-                                        </p>
-
-                                        <p className="mt-1 truncate text-xs text-muted-foreground">
-                                            SKU: {product.sku}
-                                        </p>
-                                    </CardContent>
-
-                                    <CardFooter className="p-4 pt-0">
-                                        <Button
-                                            className="w-full"
-                                            disabled={outOfStock}
-                                            onClick={() =>
-                                                addToCart(product)
-                                            }
-                                        >
-                                            {cartItem ? (
-                                                <>
-                                                    <Check className="mr-2 size-4" />
-                                                    {cartItem.quantity} di keranjang
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Plus className="mr-2 size-4" />
-                                                    Tambah
-                                                </>
-                                            )}
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div className="flex min-h-64 items-center justify-center rounded-xl border border-dashed">
-                        <div className="text-center">
-                            <p className="font-medium">
-                                Produk tidak ditemukan
-                            </p>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Coba ubah kata kunci atau kategori.
-                            </p>
-                        </div>
-                    </div>
-                )}
-            </section>
-        );
-    }
-
-    // ----------------------------------------------------------
-    // CART CONTENT
-    // ----------------------------------------------------------
-
-    function CartContent() {
-        return (
-            <div className="flex min-h-0 flex-1 flex-col">
-                {/* Cart items */}
-                <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                    {cart.length === 0 ? (
-                        <div className="flex h-64 flex-col items-center justify-center text-center">
-                            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-                                <ShoppingCart className="size-6 text-muted-foreground" />
-                            </div>
-
-                            <p className="mt-4 font-medium">
-                                Keranjang kosong
-                            </p>
-
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                Tambahkan produk ke transaksi.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {cart.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="space-y-3"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <p className="truncate font-medium">
-                                                {item.name}
-                                            </p>
-
-                                            <p className="truncate text-sm text-muted-foreground">
-                                                {item.variantName}
-                                            </p>
-                                        </div>
-
-                                        <p className="shrink-0 font-medium">
-                                            {formatRupiah(
-                                                item.sellingPrice *
-                                                item.quantity,
-                                            )}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center rounded-md border">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8"
-                                                onClick={() =>
-                                                    decreaseQuantity(
-                                                        item.id,
-                                                    )
-                                                }
-                                            >
-                                                <Minus className="size-3.5" />
-                                            </Button>
-
-                                            <span className="w-9 text-center text-sm font-medium">
-                                                {item.quantity}
-                                            </span>
-
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-8"
-                                                disabled={
-                                                    item.quantity >=
-                                                    item.stockQuantity
-                                                }
-                                                onClick={() =>
-                                                    increaseQuantity(
-                                                        item.id,
-                                                    )
-                                                }
-                                            >
-                                                <Plus className="size-3.5" />
-                                            </Button>
-                                        </div>
-
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="size-8 text-muted-foreground hover:text-destructive"
-                                            onClick={() =>
-                                                removeFromCart(item.id)
-                                            }
-                                        >
-                                            <Trash2 className="size-4" />
-                                        </Button>
-                                    </div>
-
-                                    <Separator />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Summary */}
-                <div className="space-y-4 border-t p-4">
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                                Subtotal
-                            </span>
-
-                            <span>
-                                {formatRupiah(subtotal)}
-                            </span>
-                        </div>
-
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                                Diskon
-                            </span>
-
-                            <span>
-                                {formatRupiah(discount)}
-                            </span>
-                        </div>
-
-                        <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                                Pajak
-                            </span>
-
-                            <span>
-                                {formatRupiah(tax)}
-                            </span>
-                        </div>
-
-                        <Separator />
-
-                        <div className="flex items-end justify-between gap-4">
-                            <span className="font-semibold">
-                                Total
-                            </span>
-
-                            <span className="text-2xl font-bold">
-                                {formatRupiah(total)}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Payment method */}
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium">
-                            Pembayaran
-                        </p>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            <PaymentButton
-                                active={
-                                    paymentMethod === "CASH"
-                                }
-                                icon={<Banknote />}
-                                label="Tunai"
-                                onClick={() =>
-                                    setPaymentMethod("CASH")
-                                }
-                            />
-
-                            <PaymentButton
-                                active={
-                                    paymentMethod === "QRIS"
-                                }
-                                icon={<QrCode />}
-                                label="QRIS"
-                                onClick={() =>
-                                    setPaymentMethod("QRIS")
-                                }
-                            />
-
-                            <PaymentButton
-                                active={
-                                    paymentMethod === "CARD"
-                                }
-                                icon={<CreditCard />}
-                                label="Kartu"
-                                onClick={() =>
-                                    setPaymentMethod("CARD")
-                                }
-                            />
-
-                            <PaymentButton
-                                active={
-                                    paymentMethod === "TRANSFER"
-                                }
-                                icon={<WalletCards />}
-                                label="Transfer"
-                                onClick={() =>
-                                    setPaymentMethod("TRANSFER")
-                                }
-                            />
-                        </div>
-                    </div>
-
-                    <Button
-                        className="h-12 w-full text-base"
-                        disabled={cart.length === 0 || isSubmitting}
-                        onClick={handleCheckout}
-                    >
-                        {isSubmitting ? "Memproses..." : `Bayar ${formatRupiah(total)}`}
-                    </Button>
-
-                    {cart.length > 0 && (
-                        <Button
-                            variant="ghost"
-                            className="w-full text-muted-foreground"
-                            onClick={clearCart}
-                        >
-                            Kosongkan keranjang
-                        </Button>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
+    // --------------------------------------------------------
     // RETURN
+    // --------------------------------------------------------
 
     return (
         <div className="flex min-h-full flex-col gap-4 p-4 lg:p-6">
-            {
-            /* =====================================================
-          TABLET / MOBILE CART BAR
-          Hidden on XL because desktop has sidebar.
-          ===================================================== */}
-
+            {/* Mobile / Tablet Cart */}
             <div className="xl:hidden">
                 <div className="flex items-center justify-between rounded-xl border bg-card p-3">
                     <div className="flex items-center gap-3">
@@ -724,7 +1024,9 @@ export function PosPage({
 
                             <p className="text-sm text-muted-foreground">
                                 {totalItems} item ·{" "}
-                                {formatRupiah(total)}
+                                {formatRupiah(
+                                    total,
+                                )}
                             </p>
                         </div>
                     </div>
@@ -733,7 +1035,13 @@ export function PosPage({
                         open={cartOpen}
                         onOpenChange={setCartOpen}
                     >
-                        <SheetTrigger render={<Button>Lihat keranjang</Button>} />
+                        <SheetTrigger
+                            render={
+                                <Button>
+                                    Lihat keranjang
+                                </Button>
+                            }
+                        />
 
                         <SheetContent
                             side="right"
@@ -745,25 +1053,35 @@ export function PosPage({
                                 </SheetTitle>
                             </SheetHeader>
 
-                            <CartContent />
+                            <CartContent
+                                {...cartContentProps}
+                            />
                         </SheetContent>
                     </Sheet>
                 </div>
             </div>
 
-            {
-            /* =====================================================
-          MAIN
-          ===================================================== */}
-
+            {/* Main */}
             <div className="flex min-h-0 flex-1 gap-6">
-                {/* Product catalog */}
-                <ProductCatalog />
+                <ProductCatalog
+                    products={products}
+                    filteredProducts={
+                        filteredProducts
+                    }
+                    categoryList={categoryList}
+                    selectedCategory={
+                        selectedCategory
+                    }
+                    search={search}
+                    cart={cart}
+                    onSearchChange={setSearch}
+                    onCategoryChange={
+                        setSelectedCategory
+                    }
+                    onAddToCart={addToCart}
+                />
 
-                {/* ===================================================
-            DESKTOP CART
-            =================================================== */}
-
+                {/* Desktop Cart */}
                 <aside className="hidden w-[380px] shrink-0 xl:flex">
                     <Card className="sticky top-4 flex h-[calc(100vh-2rem)] max-h-[850px] w-full flex-col">
                         <CardHeader className="border-b">
@@ -774,7 +1092,8 @@ export function PosPage({
                                     </h2>
 
                                     <p className="text-sm text-muted-foreground">
-                                        {totalItems} item
+                                        {totalItems}{" "}
+                                        item
                                     </p>
                                 </div>
 
@@ -784,43 +1103,12 @@ export function PosPage({
                             </div>
                         </CardHeader>
 
-                        <CartContent />
+                        <CartContent
+                            {...cartContentProps}
+                        />
                     </Card>
                 </aside>
             </div>
         </div>
-    );
-}
-
-// PAYMENT BUTTON
-
-function PaymentButton({
-    active,
-    icon,
-    label,
-    onClick,
-}: {
-    active: boolean;
-    icon: React.ReactNode;
-    label: string;
-    onClick: () => void;
-}) {
-    return (
-        <Button
-            type="button"
-            variant={active ? "default" : "outline"}
-            className="justify-start"
-            onClick={onClick}
-        >
-            <span className="[&_svg]:size-4">
-                {icon}
-            </span>
-
-            <span className="ml-2">{label}</span>
-
-            {active && (
-                <Check className="ml-auto size-4" />
-            )}
-        </Button>
     );
 }
