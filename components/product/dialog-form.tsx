@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Controller, type Control, type UseFormHandleSubmit } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldPath,
+  type FieldValues,
+  type UseFormHandleSubmit,
+} from "react-hook-form"
 import {
   Dialog,
   DialogClose,
@@ -13,6 +19,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import type { SelectCategory, SelectProduct } from "@/db/schema"
+
+// Types
 
 export type ProductVariantFormValues = {
   id?: string
@@ -48,6 +56,291 @@ type ProductDialogFormProps = {
   removeVariant: (index: number) => void
 }
 
+// Reusable form components
+
+type FormInputProps<T extends FieldValues> = {
+  control: Control<T>
+  name: FieldPath<T>
+  label: string
+  id: string
+  placeholder?: string
+  type?: React.HTMLInputTypeAttribute
+  step?: string
+  rules?: Parameters<typeof Controller<T>>[0]["rules"]
+}
+
+function FormInput<T extends FieldValues>({
+  control,
+  name,
+  label,
+  id,
+  placeholder,
+  type = "text",
+  step,
+  rules,
+}: FormInputProps<T>) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+
+      <Controller
+        name={name}
+        control={control}
+        rules={rules}
+        render={({ field, fieldState }) => (
+          <div className="space-y-1">
+            <Input
+              id={id}
+              type={type}
+              step={step}
+              placeholder={placeholder}
+              value={field.value ?? ""}
+              onChange={(event) => {
+                if (type === "number") {
+                  const value = event.target.value
+
+                  field.onChange(
+                    value === "" ? undefined : Number(value)
+                  )
+                  return
+                }
+
+                field.onChange(event.target.value)
+              }}
+              onBlur={field.onBlur}
+              name={field.name}
+              ref={field.ref}
+            />
+
+            {fieldState.error && (
+              <p className="text-sm text-destructive">
+                {fieldState.error.message}
+              </p>
+            )}
+          </div>
+        )}
+      />
+    </div>
+  )
+}
+
+type FormSelectProps<T extends FieldValues> = {
+  control: Control<T>
+  name: FieldPath<T>
+  label: string
+  id: string
+  placeholder: string
+  options: {
+    value: string
+    label: string
+  }[]
+  rules?: Parameters<typeof Controller<T>>[0]["rules"]
+}
+
+function FormSelect<T extends FieldValues>({
+  control,
+  name,
+  label,
+  id,
+  placeholder,
+  options,
+  rules,
+}: FormSelectProps<T>) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+
+      <Controller
+        name={name}
+        control={control}
+        rules={rules}
+        render={({ field, fieldState }) => (
+          <div className="space-y-1">
+            <select
+              id={id}
+              name={field.name}
+              ref={field.ref}
+              value={field.value ?? ""}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              className="h-9 w-full rounded-4xl border border-input bg-input/30 px-3 text-sm"
+            >
+              <option value="">{placeholder}</option>
+
+              {options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            {fieldState.error && (
+              <p className="text-sm text-destructive">
+                {fieldState.error.message}
+              </p>
+            )}
+          </div>
+        )}
+      />
+    </div>
+  )
+}
+
+type FormCheckboxProps<T extends FieldValues> = {
+  control: Control<T>
+  name: FieldPath<T>
+  id: string
+  label: string
+}
+
+function FormCheckbox<T extends FieldValues>({
+  control,
+  name,
+  id,
+  label,
+}: FormCheckboxProps<T>) {
+  return (
+    <div className="flex items-center gap-2">
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => (
+          <input
+            id={id}
+            type="checkbox"
+            checked={Boolean(field.value)}
+            onChange={(event) => field.onChange(event.target.checked)}
+            onBlur={field.onBlur}
+            name={field.name}
+            ref={field.ref}
+            className="h-4 w-4"
+          />
+        )}
+      />
+
+      <Label htmlFor={id}>{label}</Label>
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------------
+// Variant form
+// -----------------------------------------------------------------------------
+
+type VariantFormProps = {
+  control: Control<ProductFormValues>
+  index: number
+  canRemove: boolean
+  onRemove: () => void
+}
+
+function VariantForm({
+  control,
+  index,
+  canRemove,
+  onRemove,
+}: VariantFormProps) {
+  const prefix = `variants.${index}` as const
+
+  return (
+    <div className="space-y-3 rounded-lg border p-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">
+          Variant {index + 1}
+        </span>
+
+        {canRemove && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+          >
+            Remove
+          </Button>
+        )}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <FormInput
+          control={control}
+          name={`${prefix}.sku`}
+          id={`variant-sku-${index}`}
+          label="SKU"
+          placeholder="SKU"
+          rules={{
+            required: "SKU is required.",
+          }}
+        />
+
+        <FormInput
+          control={control}
+          name={`${prefix}.stockQuantity`}
+          id={`variant-stock-${index}`}
+          label="Stock Quantity"
+          placeholder="Stock quantity"
+          type="number"
+          rules={{
+            required: "Stock quantity is required.",
+            min: {
+              value: 0,
+              message: "Stock quantity cannot be negative.",
+            },
+          }}
+        />
+
+        <FormInput
+          control={control}
+          name={`${prefix}.name`}
+          id={`variant-name-${index}`}
+          label="Variant Name"
+          placeholder="Variant name"
+          rules={{
+            required: "Variant name is required.",
+          }}
+        />
+
+        <FormInput
+          control={control}
+          name={`${prefix}.costPrice`}
+          id={`variant-cost-${index}`}
+          label="Cost Price"
+          placeholder="0.00"
+          type="number"
+          step="0.01"
+          rules={{
+            required: "Cost price is required.",
+          }}
+        />
+
+        <FormInput
+          control={control}
+          name={`${prefix}.sellingPrice`}
+          id={`variant-selling-${index}`}
+          label="Selling Price"
+          placeholder="0.00"
+          type="number"
+          step="0.01"
+          rules={{
+            required: "Selling price is required.",
+          }}
+        />
+      </div>
+
+      <FormCheckbox
+        control={control}
+        name={`${prefix}.isActive`}
+        id={`variant-is-active-${index}`}
+        label="Active"
+      />
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------------
+// Product dialog
+// -----------------------------------------------------------------------------
+
 export default function ProductDialogForm({
   selectedProduct,
   categories,
@@ -63,282 +356,146 @@ export default function ProductDialogForm({
   appendVariant,
   removeVariant,
 }: ProductDialogFormProps) {
+  const isEditing = Boolean(selectedProduct)
+
+  const categoryOptions = categories.map((category) => ({
+    value: category.id,
+    label: category.name,
+  }))
+
   return (
     <Dialog
       open={dialogOpen}
       onOpenChange={(open) => {
         setDialogOpen(open)
+
         if (!open) {
           resetModal()
         }
       }}
     >
-      <DialogTrigger render={<Button onClick={openCreateModal}>Add product</Button>} />
+      <DialogTrigger
+        render={
+          <Button onClick={openCreateModal}>
+            Add product
+          </Button>
+        }
+      />
 
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{selectedProduct ? "Update product" : "Create product"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Update product" : "Create product"}
+          </DialogTitle>
+
           <DialogDescription>
-            {selectedProduct
+            {isEditing
               ? "Update the product details and variants below."
               : "Create a new product with one or more variants for your inventory."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="product-name">Name</Label>
-            <Controller
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+        >
+          {/* Product information */}
+          <div className="space-y-4">
+            <FormInput
+              control={control}
               name="name"
-              control={control}
-              rules={{ required: "Product name is required." }}
-              render={({ field, fieldState }) => (
-                <div className="space-y-1">
-                  <Input
-                    id="product-name"
-                    placeholder="Enter product name"
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                  {fieldState.error ? (
-                    <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                  ) : null}
-                </div>
-              )}
+              id="product-name"
+              label="Name"
+              placeholder="Enter product name"
+              rules={{
+                required: "Product name is required.",
+              }}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="product-category">Category</Label>
-            <Controller
+            <FormSelect
+              control={control}
               name="categoryId"
-              control={control}
-              rules={{ required: "Please select a category." }}
-              render={({ field, fieldState }) => (
-                <div className="space-y-1">
-                  <select
-                    id="product-category"
-                    className="h-9 w-full rounded-4xl border border-input bg-input/30 px-3 text-sm"
-                    value={field.value}
-                    onChange={field.onChange}
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  {fieldState.error ? (
-                    <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                  ) : null}
-                </div>
-              )}
+              id="product-category"
+              label="Category"
+              placeholder="Select a category"
+              options={categoryOptions}
+              rules={{
+                required: "Please select a category.",
+              }}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="product-description">Description</Label>
-            <Controller
+            <FormInput
+              control={control}
               name="description"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  id="product-description"
-                  placeholder="Optional description"
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                />
-              )}
+              id="product-description"
+              label="Description"
+              placeholder="Optional description"
             />
-          </div>
-         
-          <div className="flex items-center gap-2">
-            <Controller
+
+            <FormCheckbox
+              control={control}
               name="isActive"
-              control={control}
-              render={({ field }) => (
-                <input
-                  id="product-is-active"
-                  type="checkbox"
-                  checked={Boolean(field.value)}
-                  onChange={(event) => field.onChange(event.target.checked)}
-                  className="h-4 w-4"
-                />
-              )}
+              id="product-is-active"
+              label="Active"
             />
-            <Label htmlFor="product-is-active">Active</Label>
           </div>
 
+          {/* Variants */}
           <div className="space-y-3 rounded-xl border p-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">Variants</h4>
-              <Button type="button" variant="outline" size="sm" onClick={appendVariant}>
+              <h4 className="text-sm font-medium">
+                Variants
+              </h4>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={appendVariant}
+              >
                 Add variant
               </Button>
             </div>
 
             {variants.length > 0 ? (
               variants.map((variant, index) => (
-                <div key={`${variant.sku ?? "variant"}-${index}`} className="space-y-3 rounded-lg border p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Variant {index + 1}</span>
-                    {variants.length > 1 ? (
-                      <Button type="button" variant="ghost" size="sm" onClick={() => removeVariant(index)}>
-                        Remove
-                      </Button>
-                    ) : null}
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor={`variant-sku-${index}`}>SKU</Label>
-                      <Controller
-                        name={`variants.${index}.sku`}
-                        control={control}
-                        rules={{ required: "SKU is required." }}
-                        render={({ field, fieldState }) => (
-                          <div className="space-y-1">
-                            <Input
-                              id={`variant-sku-${index}`}
-                              placeholder="SKU"
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                            {fieldState.error ? (
-                              <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                            ) : null}
-                          </div>
-                        )}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`variant-stock-${index}`}>Stock Quantity</Label>
-                      <Controller
-                        name={`variants.${index}.stockQuantity`}
-                        control={control}
-                        rules={{ required: "Stock quantity is required." }}
-                        render={({ field, fieldState }) => (
-                          <div className="space-y-1">
-                            <Input
-                              id={`variant-stock-${index}`}
-                              type="number"
-                              placeholder="Stock quantity"
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                            {fieldState.error ? (
-                              <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                            ) : null}
-                          </div>
-                        )}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor={`variant-name-${index}`}>Variant Name</Label>
-                      <Controller
-                        name={`variants.${index}.name`}
-                        control={control}
-                        rules={{ required: "Variant name is required." }}
-                        render={({ field, fieldState }) => (
-                          <div className="space-y-1">
-                            <Input
-                              id={`variant-name-${index}`}
-                              placeholder="Variant name"
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                            {fieldState.error ? (
-                              <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                            ) : null}
-                          </div>
-                        )}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor={`variant-cost-${index}`}>Cost Price</Label>
-                      <Controller
-                        name={`variants.${index}.costPrice`}
-                        control={control}
-                        rules={{ required: "Cost price is required." }}
-                        render={({ field, fieldState }) => (
-                          <div className="space-y-1">
-                            <Input
-                              id={`variant-cost-${index}`}
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                            {fieldState.error ? (
-                              <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                            ) : null}
-                          </div>
-                        )}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor={`variant-selling-${index}`}>Selling Price</Label>
-                      <Controller
-                        name={`variants.${index}.sellingPrice`}
-                        control={control}
-                        rules={{ required: "Selling price is required." }}
-                        render={({ field, fieldState }) => (
-                          <div className="space-y-1">
-                            <Input
-                              id={`variant-selling-${index}`}
-                              type="number"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                            {fieldState.error ? (
-                              <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                            ) : null}
-                          </div>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Controller
-                      name={`variants.${index}.isActive`}
-                      control={control}
-                      render={({ field }) => (
-                        <input
-                          id={`variant-is-active-${index}`}
-                          type="checkbox"
-                          checked={Boolean(field.value)}
-                          onChange={(event) => field.onChange(event.target.checked)}
-                          className="h-4 w-4"
-                        />
-                      )}
-                    />
-                    <Label htmlFor={`variant-is-active-${index}`}>Active</Label>
-                  </div>
-                </div>
+                <VariantForm
+                  key={variant.id ?? `new-${index}`}
+                  control={control}
+                  index={index}
+                  canRemove={variants.length > 1}
+                  onRemove={() => removeVariant(index)}
+                />
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">No variants yet. Add one to start tracking stock.</p>
+              <p className="text-sm text-muted-foreground">
+                No variants yet. Add one to start tracking stock.
+              </p>
             )}
           </div>
 
+          {/* Footer */}
           <DialogFooter>
             <DialogClose
               render={
-                <Button type="button" variant="outline">
+                <Button
+                  type="button"
+                  variant="outline"
+                >
                   Cancel
                 </Button>
               }
             />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : selectedProduct ? "Save changes" : "Create"}
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? "Saving..."
+                : isEditing
+                  ? "Save changes"
+                  : "Create"}
             </Button>
           </DialogFooter>
         </form>
