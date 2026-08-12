@@ -1,154 +1,161 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+"use client"
+
+import type { Dispatch, SetStateAction } from "react"
+import type { UseFormReturn } from "react-hook-form"
 import { Controller } from "react-hook-form"
-import type * as ReactHookForm from "react-hook-form"
+
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import type { SelectUser } from "@/db/schema"
 
-type UserFormValues = {
-  name: string
-  email: string
-  password: string
-}
+import type { UserFormValues } from "./table"
 
 type UserDialogFormProps = {
+  form: UseFormReturn<UserFormValues>
+
   selectedUser: SelectUser | null
-  dialogOpen: boolean
-  setDialogOpen: (open: boolean) => void
-  resetModal: () => void
-  onSubmit: (data: UserFormValues) => void
-  control: ReactHookForm.Control<UserFormValues>
-  handleSubmit: ReactHookForm.UseFormHandleSubmit<UserFormValues>
-  isSubmitting: boolean
-  openCreateModal: () => void
+
+  open: boolean
+  onOpenChange: Dispatch<SetStateAction<boolean>>
+
+  onClose: () => void
+  onCreate: () => void
+
+  onSubmit: (values: UserFormValues) => Promise<void>
 }
 
 export default function UserDialogForm({
+  form,
   selectedUser,
-  dialogOpen,
-  setDialogOpen,
-  resetModal,
+  open,
+  onOpenChange,
+  onClose,
+  onCreate,
   onSubmit,
-  control,
-  handleSubmit,
-  isSubmitting,
-  openCreateModal,
 }: UserDialogFormProps) {
+  const isEdit = Boolean(selectedUser)
+  const isSubmitting = form.formState.isSubmitting
+
   return (
-    <Dialog open={dialogOpen} onOpenChange={(open) => {
-      setDialogOpen(open)
-      if (!open) {
-        resetModal()
-      }
-    }}>
-      <DialogTrigger
-        render={<Button onClick={openCreateModal}>Add user</Button>}
-      />
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        onOpenChange(value)
+
+        if (!value) {
+          onClose()
+        }
+      }}
+    >
+      <DialogTrigger onClick={onCreate} render={<Button variant="outline">Add user</Button>} />
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{selectedUser ? "Update user" : "Create user"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Update user" : "Create user"}</DialogTitle>
           <DialogDescription>
-            {selectedUser
+            {isEdit
               ? "Update the user information below."
               : "Create a new user account for your workspace."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="user-name">Name</Label>
+        <form id="user-form" onSubmit={form.handleSubmit(onSubmit)}>
+          <FieldGroup>
             <Controller
               name="name"
-              control={control}
-              rules={{ required: "User name is required." }}
+              control={form.control}
               render={({ field, fieldState }) => (
-                <div className="space-y-1">
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="user-form-name">Name</FieldLabel>
+
                   <Input
-                    id="user-name"
+                    {...field}
+                    id="user-form-name"
                     placeholder="Enter user name"
-                    value={field.value}
-                    onChange={field.onChange}
+                    autoComplete="off"
+                    aria-invalid={fieldState.invalid}
                   />
-                  {fieldState.error ? (
-                    <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                  ) : null}
-                </div>
+
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
               )}
             />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="user-email">Email</Label>
             <Controller
               name="email"
-              control={control}
-              rules={{ required: "Email is required." }}
+              control={form.control}
               render={({ field, fieldState }) => (
-                <div className="space-y-1">
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="user-form-email">Email</FieldLabel>
+
                   <Input
-                    id="user-email"
+                    {...field}
+                    id="user-form-email"
                     type="email"
                     placeholder="email@example.com"
-                    value={field.value}
-                    onChange={field.onChange}
+                    autoComplete="email"
+                    aria-invalid={fieldState.invalid}
                   />
-                  {fieldState.error ? (
-                    <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                  ) : null}
-                </div>
+
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
               )}
             />
-          </div>
 
-          {!selectedUser ? (
-            <div className="space-y-2">
-              <Label htmlFor="user-password">Password</Label>
+            {!isEdit && (
               <Controller
                 name="password"
-                control={control}
-                rules={{ required: "Password is required." }}
+                control={form.control}
                 render={({ field, fieldState }) => (
-                  <div className="space-y-1">
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="user-form-password">Password</FieldLabel>
+
                     <Input
-                      id="user-password"
+                      {...field}
+                      id="user-form-password"
                       type="password"
                       placeholder="Minimum 8 characters"
-                      value={field.value}
-                      onChange={field.onChange}
+                      autoComplete="new-password"
+                      aria-invalid={fieldState.invalid}
                     />
-                    {fieldState.error ? (
-                      <p className="text-sm text-destructive">{fieldState.error.message}</p>
-                    ) : null}
-                  </div>
+
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
                 )}
               />
-            </div>
-          ) : null}
-
-          <DialogFooter>
-            <DialogClose
-              render={
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              }
-            />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : selectedUser ? "Save changes" : "Create"}
-            </Button>
-          </DialogFooter>
+            )}
+          </FieldGroup>
         </form>
+
+        <DialogFooter>
+          <DialogClose disabled={isSubmitting}>Cancel</DialogClose>
+
+          <Button type="submit" form="user-form" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : isEdit ? "Save changes" : "Create"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
