@@ -47,21 +47,11 @@ const data = {
       items: [
         {
           title: "Manage Products",
-          url: "/dashboard/product",
+          url: "/dashboard/products",
         },
         {
           title: "Manage Categories",
-          url: "/dashboard/category",
-        }
-      ],
-    },
-     {
-      title: "Payments",
-      url: "#",
-      items: [
-        {
-          title: "Manage Payment Methods",
-          url: "/dashboard/payment-method",
+          url: "/dashboard/categories",
         }
       ],
     },
@@ -71,12 +61,8 @@ const data = {
       items: [
         {
           title: "Manage Users",
-          url: "/dashboard/user",
-        },
-        {
-          title: "Manage Roles",
-          url: "/dashboard/role",
-        },
+          url: "/dashboard/users",
+        }
         
       ],
     },
@@ -84,10 +70,6 @@ const data = {
       title: "Settings",
       url: "#",
       items: [
-        {
-          title: "Update Profile",
-          url: "/dashboard/profile",
-        },
         {
           title: "Logout",
           url: "/logout",
