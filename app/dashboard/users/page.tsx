@@ -19,7 +19,7 @@ import { checkPermission } from "@/lib/actions/users"
 
 export default async function UsersPage() {
   const allowed = await checkPermission({
-    user: ["view"],
+    users: ["view"],
   });
 
   if (!allowed) {

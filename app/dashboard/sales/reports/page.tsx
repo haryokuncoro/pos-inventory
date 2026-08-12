@@ -19,7 +19,7 @@ import { checkPermission } from "@/lib/actions/users"
 
 export default async function SalesRepPage() {
   const allowed = await checkPermission({
-      sale: ["view"],
+      sales_reports: ["view"],
     });
   
     if (!allowed) {
