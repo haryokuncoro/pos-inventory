@@ -3,7 +3,8 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/db/drizzle"; 
 import { schema } from "@/db/schema";
 import { nextCookies } from "better-auth/next-js";
-
+import { admin } from "better-auth/plugins"
+    
 export const auth = betterAuth({
     emailAndPassword:{
         enabled: true,
@@ -18,5 +19,5 @@ export const auth = betterAuth({
         provider: "pg", 
         schema,
     }),
-    plugins: [nextCookies()]
+    plugins: [nextCookies(), admin()]
 });
