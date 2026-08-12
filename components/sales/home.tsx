@@ -1,31 +1,37 @@
 import { Card } from "@/components/ui/card"
 import { getAllCategories } from "@/lib/actions/categories"
-import { getAllProducts } from "@/lib/actions/products"
+import { getSaleProductsPaginated } from "@/lib/actions/sales"
 import { PosPage } from "./pos"
 
-export default async function SaleHomePage() {
-  const [products, categories] = await Promise.all([
-    getAllProducts(),
+type SaleHomePageProps = {
+  query?: string
+  page?: number
+}
+
+export default async function SaleHomePage({
+  query,
+  page,
+}: SaleHomePageProps) {
+  const pageSize = 24
+  const [catalogResult, categories] = await Promise.all([
+    getSaleProductsPaginated({
+      page,
+      pageSize,
+      query,
+    }),
     getAllCategories(),
   ])
 
-  const saleProducts = products.flatMap((product) =>
-    (product.variants ?? []).
-      filter((variant) => variant.isActive)
-      .map((variant) => ({
-        id: variant.id,
-        name: product.name,
-        variantName: variant.name,
-        sku: variant.sku,
-        category: product.categoryName ?? "Uncategorized",
-        sellingPrice: Number(variant.sellingPrice),
-        stockQuantity: Number(variant.stockQuantity ?? 0),
-      })),
-  )
-
   return (
     <Card className="w-full">
-      <PosPage products={saleProducts} categories={categories.map((category) => category.name)} />
+      <PosPage
+        products={catalogResult.items}
+        categories={categories.map((category) => category.name)}
+        searchQuery={query ?? ""}
+        page={catalogResult.page}
+        totalPages={catalogResult.totalPages}
+        totalItems={catalogResult.totalItems}
+      />
     </Card>
   )
 }

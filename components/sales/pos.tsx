@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import type { CartContentProps } from "./cart-content";
-import {Check, ShoppingCart} from "lucide-react";
+import { Check, ShoppingCart } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +54,10 @@ export type CategoryItem = {
 type PosPageProps = {
     products: SaleProduct[];
     categories?: string[];
+    searchQuery: string;
+    page: number;
+    totalPages: number;
+    totalItems: number;
 };
 
 
@@ -96,10 +101,19 @@ export function PaymentButton({
 export function PosPage({
     products,
     categories = [],
+    searchQuery,
+    page,
+    totalPages,
+    totalItems,
 }: PosPageProps) {
     // STATE
 
-    const [search, setSearch] = React.useState("");
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const [isPending, startTransition] = React.useTransition();
+
+    const [search, setSearch] = React.useState(searchQuery);
     const [selectedCategory, setSelectedCategory] =
         React.useState("ALL");
 
@@ -127,9 +141,9 @@ export function PosPage({
                 categories.length > 0
                     ? categories
                     : products.map(
-                          (product) =>
-                              product.category,
-                      ),
+                        (product) =>
+                            product.category,
+                    ),
             ),
         );
 
@@ -146,41 +160,76 @@ export function PosPage({
     }, [categories, products]);
 
     // FILTER PRODUCTS
-    const filteredProducts = React.useMemo(() => {
-        const keyword = search
-            .trim()
-            .toLowerCase();
+    React.useEffect(() => {
+        setSearch(searchQuery);
+    }, [searchQuery]);
 
+    const filteredProducts = React.useMemo(() => {
         return products.filter((product) => {
             const matchesCategory =
                 selectedCategory === "ALL" ||
                 product.category ===
-                    selectedCategory;
-
-            if (!keyword) {
-                return matchesCategory;
-            }
-
-            const matchesSearch =
-                product.name
-                    .toLowerCase()
-                    .includes(keyword) ||
-                product.variantName
-                    .toLowerCase()
-                    .includes(keyword) ||
-                product.sku
-                    .toLowerCase()
-                    .includes(keyword);
-
-            return (
-                matchesCategory && matchesSearch
-            );
+                selectedCategory;
+            return matchesCategory;
         });
     }, [
         products,
-        search,
         selectedCategory,
     ]);
+
+    const safePage = Math.min(
+        Math.max(page, 1),
+        Math.max(totalPages, 1),
+    );
+
+    const updateCatalogParams = React.useCallback((nextQuery: string, nextPage: number) => {
+        const params = new URLSearchParams(
+            searchParams.toString(),
+        );
+
+        const normalizedQuery = nextQuery.trim();
+
+        if (normalizedQuery) {
+            params.set("query", normalizedQuery);
+        } else {
+            params.delete("query");
+        }
+
+        if (nextPage > 1) {
+            params.set("page", String(nextPage));
+        } else {
+            params.delete("page");
+        }
+
+        startTransition(() => {
+            router.replace(
+                `${pathname}?${params.toString()}`,
+                {
+                    scroll: false,
+                },
+            );
+        });
+    }, [pathname, router, searchParams, startTransition]);
+
+    React.useEffect(() => {
+        const searchTimeout = setTimeout(() => {
+            if (search.trim() === searchQuery.trim()) {
+                return;
+            }
+
+            updateCatalogParams(search, 1);
+        }, 300);
+
+        return () => clearTimeout(searchTimeout);
+    }, [search, searchQuery, updateCatalogParams]);
+
+    function handleSearchChange(value: string) {
+        setSearch(value);
+    }
+
+    function handleCategoryChange(value: string) {
+        setSelectedCategory(value);
+    }
 
     // CART
     function addToCart(product: SaleProduct) {
@@ -213,10 +262,10 @@ export function PosPage({
             return current.map((item) =>
                 item.id === product.id
                     ? {
-                          ...item,
-                          quantity:
-                              item.quantity + 1,
-                      }
+                        ...item,
+                        quantity:
+                            item.quantity + 1,
+                    }
                     : item,
             );
         });
@@ -250,10 +299,10 @@ export function PosPage({
                 .map((item) =>
                     item.id === id
                         ? {
-                              ...item,
-                              quantity:
-                                  item.quantity - 1,
-                          }
+                            ...item,
+                            quantity:
+                                item.quantity - 1,
+                        }
                         : item,
                 )
                 .filter(
@@ -334,7 +383,7 @@ export function PosPage({
     }
 
     // TOTALS
-    const totalItems = cart.reduce(
+    const totalCartItems = cart.reduce(
         (sum, item) =>
             sum + item.quantity,
         0,
@@ -344,7 +393,7 @@ export function PosPage({
         (sum, item) =>
             sum +
             item.sellingPrice *
-                item.quantity,
+            item.quantity,
         0,
     );
 
@@ -413,7 +462,7 @@ export function PosPage({
                             </p>
 
                             <p className="text-sm text-muted-foreground">
-                                {totalItems} item ·{" "}
+                                {totalCartItems} item ·{" "}
                                 {formatRupiah(
                                     total,
                                 )}
@@ -454,19 +503,40 @@ export function PosPage({
             {/* Main */}
             <div className="flex min-h-0 flex-1 gap-6">
                 <ProductCatalog
-                    products={products}
-                    filteredProducts={
-                        filteredProducts
-                    }
+                    filteredProducts={filteredProducts}
                     categoryList={categoryList}
                     selectedCategory={
                         selectedCategory
                     }
                     search={search}
                     cart={cart}
-                    onSearchChange={setSearch}
+                    currentPage={safePage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    isLoading={isPending}
+                    onSearchChange={
+                        handleSearchChange
+                    }
                     onCategoryChange={
-                        setSelectedCategory
+                        handleCategoryChange
+                    }
+                    onPreviousPage={() =>
+                        updateCatalogParams(
+                            search,
+                            Math.max(
+                                safePage - 1,
+                                1,
+                            ),
+                        )
+                    }
+                    onNextPage={() =>
+                        updateCatalogParams(
+                            search,
+                            Math.min(
+                                safePage + 1,
+                                totalPages,
+                            ),
+                        )
                     }
                     onAddToCart={addToCart}
                 />
@@ -482,7 +552,7 @@ export function PosPage({
                                     </h2>
 
                                     <p className="text-sm text-muted-foreground">
-                                        {totalItems}{" "}
+                                        {totalCartItems}{" "}
                                         item
                                     </p>
                                 </div>

@@ -17,14 +17,28 @@ import {
 import { AccessDenied } from "@/components/auth/permission-guard"
 import { checkPermission } from "@/lib/actions/users"
 
-export default async function SalesPage() {
+type SalesPageProps = {
+  searchParams?: Promise<{
+    query?: string
+    page?: string
+  }>
+}
+
+export default async function SalesPage({
+  searchParams,
+}: SalesPageProps) {
+  const resolvedSearchParams = await searchParams
+  const query = resolvedSearchParams?.query?.trim() ?? ""
+  const parsedPage = Number.parseInt(resolvedSearchParams?.page ?? "1", 10)
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1
+
   const allowed = await checkPermission({
-      sales: ["view"],
-    });
-  
-    if (!allowed) {
-      return <AccessDenied />;
-    }
+    sales: ["view"],
+  });
+
+  if (!allowed) {
+    return <AccessDenied />;
+  }
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -49,7 +63,7 @@ export default async function SalesPage() {
         </header>
 
         <div className="flex flex-1 flex-col gap-4 p-4">
-          <SalesHomePage />
+          <SalesHomePage query={query} page={page} />
         </div>
       </SidebarInset>
     </SidebarProvider>

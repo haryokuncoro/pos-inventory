@@ -13,9 +13,13 @@ import {
   user
 } from "@/db/schema";
 import {
+  and,
   desc,
   eq,
+  ilike,
   inArray,
+  or,
+  sql,
 } from "drizzle-orm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
@@ -58,6 +62,30 @@ export type CreateSaleResult =
       success: false;
       message: string;
     };
+
+export type GetSaleProductsPaginatedInput = {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+};
+
+export type SaleCatalogItem = {
+  id: string;
+  name: string;
+  variantName: string;
+  sku: string;
+  category: string;
+  sellingPrice: number;
+  stockQuantity: number;
+};
+
+export type PaginatedSaleProductsResult = {
+  items: SaleCatalogItem[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+};
 
  // HELPERS
 
@@ -155,6 +183,101 @@ export async function getSaleProducts(): Promise<
     throw new Error(
       "Failed to fetch sale products",
     );
+  }
+}
+
+/**
+ * Get sale catalog rows with server-side pagination.
+ * Pagination is based on variants, so page size matches rendered product cards.
+ */
+export async function getSaleProductsPaginated(
+  input: GetSaleProductsPaginatedInput = {},
+): Promise<PaginatedSaleProductsResult> {
+  try {
+    const pageSize = Math.min(Math.max(input.pageSize ?? 24, 1), 100);
+    const requestedPage = Math.max(input.page ?? 1, 1);
+    const normalizedQuery = input.query?.trim() ?? "";
+    const keyword = `%${normalizedQuery}%`;
+
+    const whereCondition = normalizedQuery
+      ? or(
+          ilike(product.name, keyword),
+          ilike(category.name, keyword),
+          ilike(productVariant.name, keyword),
+          ilike(productVariant.sku, keyword),
+        )
+      : undefined;
+
+    const baseQuery = db
+      .select({
+        id: productVariant.id,
+      })
+      .from(productVariant)
+      .innerJoin(product, eq(productVariant.productId, product.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(
+        and(
+          eq(product.isActive, true),
+          eq(productVariant.isActive, true),
+          whereCondition,
+        ),
+      );
+
+    const [{ count }] = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(baseQuery.as("sale_catalog_count"));
+
+    const totalItems = Number(count ?? 0);
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const page = Math.min(requestedPage, totalPages);
+    const offset = (page - 1) * pageSize;
+
+    const rows = await db
+      .select({
+        id: productVariant.id,
+        name: product.name,
+        variantName: productVariant.name,
+        sku: productVariant.sku,
+        category: category.name,
+        sellingPrice: productVariant.sellingPrice,
+        stockQuantity: productVariant.stockQuantity,
+      })
+      .from(productVariant)
+      .innerJoin(product, eq(productVariant.productId, product.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(
+        and(
+          eq(product.isActive, true),
+          eq(productVariant.isActive, true),
+          whereCondition,
+        ),
+      )
+      .orderBy(desc(productVariant.createdAt))
+      .limit(pageSize)
+      .offset(offset);
+
+    const items: SaleCatalogItem[] = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      variantName: row.variantName,
+      sku: row.sku,
+      category: row.category ?? "Uncategorized",
+      sellingPrice: Number(row.sellingPrice),
+      stockQuantity: Number(row.stockQuantity ?? 0),
+    }));
+
+    return {
+      items,
+      page,
+      pageSize,
+      totalItems,
+      totalPages,
+    };
+  } catch (error) {
+    console.error("Error fetching paginated sale products:", error);
+    throw new Error("Failed to fetch paginated sale products");
   }
 }
 

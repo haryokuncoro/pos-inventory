@@ -77,11 +77,21 @@ export async function getProductsPaginated(
     const pageSize = Math.min(Math.max(input.pageSize ?? 5, 1), 100);
     const requestedPage = Math.max(input.page ?? 1, 1);
     const normalizedQuery = input.query?.trim() ?? "";
+    const keyword = `%${normalizedQuery}%`;
 
     const whereCondition = normalizedQuery
       ? or(
-          ilike(product.name, `%${normalizedQuery}%`),
-          ilike(category.name, `%${normalizedQuery}%`),
+          ilike(product.name, keyword),
+          ilike(category.name, keyword),
+          sql`exists (
+            select 1
+            from ${productVariant}
+            where ${productVariant.productId} = ${product.id}
+              and (
+                ${productVariant.name} ilike ${keyword}
+                or ${productVariant.sku} ilike ${keyword}
+              )
+          )`,
         )
       : undefined;
 
