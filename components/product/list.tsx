@@ -14,6 +14,7 @@ import type { ProductRow } from "./table"
 
 type ProductListProps = {
     products: ProductRow[]
+    isLoading?: boolean
 
     onEdit: (product: ProductRow) => void
     onDelete: (productId: string) => void
@@ -21,6 +22,7 @@ type ProductListProps = {
 
 export default function ProductList({
     products,
+    isLoading,
     onEdit,
     onDelete,
 }: ProductListProps) {
@@ -40,7 +42,9 @@ export default function ProductList({
                 </TableHeader>
 
                 <TableBody>
-                    {products.length > 0 ? (
+                    {isLoading ? (
+                        <LoadingProductRow />
+                    ) : products.length > 0 ? (
                         products.map((product) => (
                             <ProductRowItem
                                 key={product.id}
@@ -55,6 +59,19 @@ export default function ProductList({
                 </TableBody>
             </Table>
         </div>
+    )
+}
+
+function LoadingProductRow() {
+    return (
+        <TableRow>
+            <TableCell
+                colSpan={5}
+                className="py-6 text-center text-sm text-muted-foreground"
+            >
+                Loading products...
+            </TableCell>
+        </TableRow>
     )
 }
 

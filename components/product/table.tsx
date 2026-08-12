@@ -1,13 +1,19 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { useFieldArray, useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
 import type { SelectCategory, SelectProduct } from "@/db/schema"
-import { createProduct, deleteProduct, updateProduct } from "@/lib/actions/products"
+import {
+  createProduct,
+  deleteProduct,
+  getProductsPaginated,
+  updateProduct,
+  type PaginatedProductsResult,
+} from "@/lib/actions/products"
 
 import ProductDialogForm from "./dialog-form"
 import ProductList from "./list"
@@ -51,7 +57,7 @@ export type ProductRow = SelectProduct & {
 }
 
 type ProductTableProps = {
-  initialProducts: ProductRow[]
+  initialProducts: PaginatedProductsResult
   initialCategories: SelectCategory[]
 }
 
@@ -73,12 +79,16 @@ const defaultValues: ProductFormValues = {
 }
 
 export default function ProductTable({ initialProducts, initialCategories }: ProductTableProps) {
-  const [products, setProducts] = useState<ProductRow[]>(initialProducts)
+  const [products, setProducts] = useState<ProductRow[]>(initialProducts.items)
   const [categories] = useState<SelectCategory[]>(initialCategories)
 
   const [query, setQuery] = useState("")
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5)
+  const [page, setPage] = useState(initialProducts.page)
+  const [pageSize, setPageSize] = useState(initialProducts.pageSize)
+  const [totalItems, setTotalItems] = useState(initialProducts.totalItems)
+  const [totalPages, setTotalPages] = useState(initialProducts.totalPages)
+  const [isPending, startTransition] = useTransition()
+  const initialLoadCompletedRef = useRef(false)
 
   const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -93,35 +103,42 @@ export default function ProductTable({ initialProducts, initialCategories }: Pro
     name: "variants",
   })
 
-  const filteredProducts = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-
-    if (!normalizedQuery) {
-      return products
-    }
-
-    return products.filter((product) => {
-      const categoryName = product.categoryName?.toLowerCase() ?? ""
-      return (
-        product.name.toLowerCase().includes(normalizedQuery) ||
-        categoryName.includes(normalizedQuery)
-      )
+  const fetchProducts = useCallback(async (
+    nextPage = page,
+    nextPageSize = pageSize,
+    nextQuery = query,
+  ) => {
+    const result = await getProductsPaginated({
+      page: nextPage,
+      pageSize: nextPageSize,
+      query: nextQuery,
     })
-  }, [products, query])
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize))
-  const safePage = Math.min(page, totalPages)
+    setProducts(result.items)
+    setTotalItems(result.totalItems)
+    setTotalPages(result.totalPages)
+
+    if (result.page !== nextPage) {
+      setPage(result.page)
+    }
+  }, [page, pageSize, query])
 
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages)
+    if (!initialLoadCompletedRef.current) {
+      initialLoadCompletedRef.current = true
+      return
     }
-  }, [page, totalPages])
 
-  const pagedProducts = useMemo(() => {
-    const startIndex = (safePage - 1) * pageSize
-    return filteredProducts.slice(startIndex, startIndex + pageSize)
-  }, [filteredProducts, pageSize, safePage])
+    startTransition(() => {
+      fetchProducts().catch((error) => {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Unable to fetch products."
+        )
+      })
+    })
+  }, [fetchProducts, page, pageSize, query])
 
   const resetModal = () => {
     setDialogOpen(false)
@@ -177,7 +194,7 @@ export default function ProductTable({ initialProducts, initialCategories }: Pro
       }))
 
       if (selectedProduct) {
-        const updatedProduct = await updateProduct(
+        await updateProduct(
           selectedProduct.id,
           {
             name: values.name,
@@ -188,37 +205,11 @@ export default function ProductTable({ initialProducts, initialCategories }: Pro
           variantsPayload,
         )
 
-        const categoryName =
-          categories.find((category) => category.id === values.categoryId)?.name ?? null
-
-        setProducts((currentProducts) =>
-          currentProducts.map((product) =>
-            product.id === selectedProduct.id
-              ? {
-                ...product,
-                name: updatedProduct?.product?.name ?? values.name,
-                categoryId: values.categoryId,
-                description: values.description || null,
-                isActive: values.isActive,
-                categoryName,
-                variants: updatedProduct?.variants?.map((variant) => ({
-                  id: variant.id,
-                  productId: variant.productId,
-                  sku: variant.sku,
-                  stockQuantity: variant.stockQuantity,
-                  name: variant.name,
-                  costPrice: String(variant.costPrice),
-                  sellingPrice: String(variant.sellingPrice),
-                  isActive: variant.isActive,
-                })),
-              }
-              : product
-          )
-        )
+        await fetchProducts()
 
         toast.success("Product updated")
       } else {
-        const createdResult = await createProduct(
+        await createProduct(
           {
             name: values.name,
             categoryId: values.categoryId,
@@ -228,27 +219,10 @@ export default function ProductTable({ initialProducts, initialCategories }: Pro
           variantsPayload,
         )
 
-        const categoryName =
-          categories.find((category) => category.id === values.categoryId)?.name ?? null
-
-        if (createdResult) {
-          setProducts((currentProducts) => [
-            {
-              ...createdResult.product,
-              categoryName,
-              variants: createdResult.variants.map((variant) => ({
-                id: variant.id,
-                productId: variant.productId,
-                sku: variant.sku,
-                stockQuantity: variant.stockQuantity,
-                name: variant.name,
-                costPrice: String(variant.costPrice),
-                sellingPrice: String(variant.sellingPrice),
-                isActive: variant.isActive,
-              })),
-            } as ProductRow,
-            ...currentProducts,
-          ])
+        if (page !== 1) {
+          setPage(1)
+        } else {
+          await fetchProducts(1, pageSize, query)
         }
 
         toast.success("Product created")
@@ -268,7 +242,7 @@ export default function ProductTable({ initialProducts, initialCategories }: Pro
 
     try {
       await deleteProduct(productId)
-      setProducts((currentProducts) => currentProducts.filter((product) => product.id !== productId))
+      await fetchProducts()
       toast.success("Product deleted")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete product.")
@@ -307,16 +281,18 @@ export default function ProductTable({ initialProducts, initialCategories }: Pro
       </div>
 
       <ProductList
-        products={pagedProducts}
+        products={products}
+        isLoading={isPending}
         onEdit={openEditModal}
         onDelete={handleDelete}
       />
 
       <GeneralPagination
-        page={safePage}
+        page={page}
         totalPages={totalPages}
-        totalItems={filteredProducts.length}
-        currentItems={pagedProducts.length}
+        totalItems={totalItems}
+        currentItems={products.length}
+        disabled={isPending}
         onPrevious={() => setPage((currentPage) => Math.max(currentPage - 1, 1))}
         onNext={() => setPage((currentPage) => Math.min(currentPage + 1, totalPages))}
       />

@@ -9,7 +9,7 @@ import {
   InsertProductVariant,
   category,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, ilike, inArray, or, sql, desc } from "drizzle-orm";
 
 type CreateProductInput = Omit<
   InsertProduct,
@@ -52,6 +52,120 @@ export type ProductWithCategoryAndVariants = {
     updatedAt: Date;
   }[];
 };
+
+export type GetProductsPaginatedInput = {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+};
+
+export type PaginatedProductsResult = {
+  items: ProductWithCategoryAndVariants[];
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+/**
+ * Get products with server-side pagination and search.
+ */
+export async function getProductsPaginated(
+  input: GetProductsPaginatedInput = {},
+): Promise<PaginatedProductsResult> {
+  try {
+    const pageSize = Math.min(Math.max(input.pageSize ?? 5, 1), 100);
+    const requestedPage = Math.max(input.page ?? 1, 1);
+    const normalizedQuery = input.query?.trim() ?? "";
+
+    const whereCondition = normalizedQuery
+      ? or(
+          ilike(product.name, `%${normalizedQuery}%`),
+          ilike(category.name, `%${normalizedQuery}%`),
+        )
+      : undefined;
+
+    const [{ count }] = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(product)
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(whereCondition);
+
+    const totalItems = Number(count ?? 0);
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const page = Math.min(requestedPage, totalPages);
+    const offset = (page - 1) * pageSize;
+
+    const products = await db
+      .select({
+        id: product.id,
+        categoryId: product.categoryId,
+        name: product.name,
+        description: product.description,
+        isActive: product.isActive,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+        categoryName: category.name,
+      })
+      .from(product)
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(whereCondition)
+      .orderBy(desc(product.createdAt))
+      .limit(pageSize)
+      .offset(offset);
+
+    const productIds = products.map((item) => item.id);
+
+    const variants =
+      productIds.length > 0
+        ? await db
+            .select({
+              id: productVariant.id,
+              productId: productVariant.productId,
+              sku: productVariant.sku,
+              name: productVariant.name,
+              costPrice: productVariant.costPrice,
+              sellingPrice: productVariant.sellingPrice,
+              stockQuantity: productVariant.stockQuantity,
+              isActive: productVariant.isActive,
+              createdAt: productVariant.createdAt,
+              updatedAt: productVariant.updatedAt,
+            })
+            .from(productVariant)
+            .where(inArray(productVariant.productId, productIds))
+            .orderBy(desc(productVariant.createdAt))
+        : [];
+
+    const variantsByProductId = variants.reduce<
+      Record<string, ProductWithCategoryAndVariants["variants"]>
+    >((accumulator, variant) => {
+      if (!accumulator[variant.productId]) {
+        accumulator[variant.productId] = [];
+      }
+
+      accumulator[variant.productId].push(variant);
+      return accumulator;
+    }, {});
+
+    const items = products.map((item) => ({
+      ...item,
+      variants: variantsByProductId[item.id] ?? [],
+    }));
+
+    return {
+      items,
+      page,
+      pageSize,
+      totalItems,
+      totalPages,
+    };
+  } catch (error) {
+    console.error("Error fetching paginated products:", error);
+    throw new Error("Failed to fetch paginated products");
+  }
+}
 
 /**
  * Get all products with their variants.
@@ -220,7 +334,8 @@ export async function updateProduct(
           savedVariants.push(updatedVariant);
         }
       } else {
-        const { id: _, ...variantData } = variant;
+        const { id: ignoredId, ...variantData } = variant;
+        void ignoredId;
 
         const [createdVariant] = await db
           .insert(productVariant)

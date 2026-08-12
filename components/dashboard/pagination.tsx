@@ -7,6 +7,7 @@ type GeneralPaginationProps = {
   totalPages: number
   totalItems: number
   currentItems: number
+  disabled?: boolean
 
   onPrevious: () => void
   onNext: () => void
@@ -17,6 +18,7 @@ export default function GeneralPagination({
   totalPages,
   totalItems,
   currentItems,
+  disabled,
   onPrevious,
   onNext,
 }: GeneralPaginationProps) {
@@ -33,7 +35,7 @@ export default function GeneralPagination({
           variant="outline"
           size="sm"
           onClick={onPrevious}
-          disabled={page === 1}
+          disabled={disabled || page === 1}
         >
           Previous
         </Button>
@@ -47,7 +49,7 @@ export default function GeneralPagination({
           variant="outline"
           size="sm"
           onClick={onNext}
-          disabled={page === totalPages}
+          disabled={disabled || page === totalPages}
         >
           Next
         </Button>
