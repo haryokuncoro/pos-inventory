@@ -470,8 +470,8 @@ export const sale = pgTable(
   ],
 );
 
-export type InsertSale = typeof sale.$inferInsert;
-export type SelectSale = typeof sale.$inferSelect;
+export type InsertSales = typeof sale.$inferInsert;
+export type SelectSales = typeof sale.$inferSelect;
 
 export const saleItem = pgTable(
   "sale_item",
