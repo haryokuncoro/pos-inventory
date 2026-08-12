@@ -51,7 +51,7 @@ import { headers } from "next/headers"
         return hasPermission.success;
     } catch (error) {
         console.error(error);
-        throw new Error("Failed to check permission");
+        return false;
     }
 }
 

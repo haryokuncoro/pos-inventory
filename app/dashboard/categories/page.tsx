@@ -1,3 +1,4 @@
+import { AccessDenied } from "@/components/auth/permission-guard"
 import CategoryHomePage from "@/components/category/home"
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import {
@@ -14,8 +15,16 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { checkPermission } from "@/lib/actions/users"
 
-export default function CategoryPage() {
+export default async function CategoryPage() {
+  const allowed = await checkPermission({
+        categories: ["view"],
+      });
+    
+      if (!allowed) {
+        return <AccessDenied />;
+      }
   return (
     <SidebarProvider>
       <AppSidebar />

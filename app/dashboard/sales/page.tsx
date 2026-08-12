@@ -14,8 +14,17 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { AccessDenied } from "@/components/auth/permission-guard"
+import { checkPermission } from "@/lib/actions/users"
 
-export default function SalesPage() {
+export default async function SalesPage() {
+  const allowed = await checkPermission({
+      sales_reports: ["view"],
+    });
+  
+    if (!allowed) {
+      return <AccessDenied />;
+    }
   return (
     <SidebarProvider>
       <AppSidebar />
