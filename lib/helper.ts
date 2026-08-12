@@ -1,5 +1,5 @@
 
-function formatRupiah(value: number) {
+export function formatRupiah(value: number) {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
@@ -7,7 +7,7 @@ function formatRupiah(value: number) {
     }).format(value);
 }
 
-function parseAmount(value: string) {
+export function parseAmount(value: string) {
     const normalized = value.replace(/,/g, ".").trim();
 
     if (!normalized) {
@@ -19,4 +19,32 @@ function parseAmount(value: string) {
     return Number.isFinite(amount) ? amount : 0;
 }
 
-export { formatRupiah, parseAmount };
+export function generateSku(
+  productName: string,
+  variantName: string
+): string {
+  const normalize = (value: string) =>
+    value
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+
+  const product = normalize(productName)
+  const variant = normalize(variantName)
+
+  if (!product && !variant) {
+    return ""
+  }
+
+  if (!variant) {
+    return product
+  }
+
+  if (!product) {
+    return variant
+  }
+
+  return `${product}-${variant}`
+}
+

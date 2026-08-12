@@ -1,4 +1,4 @@
-import SalesReportHome from "@/components/sales/home"
+import SalesReportHome from "@/components/sales-report/home"
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import {
   Breadcrumb,
@@ -17,7 +17,7 @@ import {
 import { AccessDenied } from "@/components/auth/permission-guard"
 import { checkPermission } from "@/lib/actions/users"
 
-export default async function SalesRepPage() {
+export default async function SalesReportPage() {
   const allowed = await checkPermission({
       sales_reports: ["view"],
     });
