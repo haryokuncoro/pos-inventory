@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { Receipt } from "@/components/sales/receipt";
-import { getSaleById } from "@/lib/actions/sales";
+import { getSaleById } from "@/lib/actions/sales-receipt";
 
 type ReceiptPageProps = {
     params: Promise<{ id: string }>;

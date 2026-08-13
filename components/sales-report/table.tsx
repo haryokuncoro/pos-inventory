@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatRupiah } from "@/lib/helper"
-import type { SalesReportSummary } from "@/lib/actions/sales"
+import type { SalesReportSummary } from "@/lib/actions/sales-report"
 
 type SaleRow = {
   id: string

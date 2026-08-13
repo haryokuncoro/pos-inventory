@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card"
-import { getAllSales, getSalesReportSummary } from "@/lib/actions/sales"
+import { getAllSales, getSalesReportSummary } from "@/lib/actions/sales-report"
 import { SalesReportTable } from "./table"
 
 export default async function SalesReportHome() {
