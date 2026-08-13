@@ -4,6 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,8 +18,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { createStoreSettings, updateStoreSettings } from "@/lib/actions/store-settings";
 
 const storeSettingsSchema = z.object({
+  storeId: z.string(),
+  storeSettingsId: z.string(),
   name: z
     .string()
     .min(1, "Store name is required")
@@ -102,6 +106,8 @@ export function StoreSettingsForm({
     resolver: zodResolver(storeSettingsSchema),
     defaultValues: initialData,
   })
+  const storeId = initialData.storeId
+  const storeSettingsId = initialData.storeSettingsId
 
   const {
     control,
@@ -115,10 +121,39 @@ export function StoreSettingsForm({
   async function onSubmit(
     values: StoreSettingsFormValues,
   ) {
-    console.log(values)
+    try {
+      const storeData = {
+        name: values.name,
+        code: values.code,
+        address: values.address,
+        phone: values.phone,
+        email: values.email,
+        logoUrl: values.logoUrl,
+      }
+      const settingsData = {
+        receiptHeader: values.receiptHeader,
+        receiptFooter: values.receiptFooter,
+        taxEnabled: values.taxEnabled,
+        taxRate: values.taxRate,
+        currency: values.currency,
+        timezone: values.timezone,
+        allowNegativeStock: values.allowNegativeStock,
+      }
 
-    // TODO:
-    // Call server action
+      if (storeId && storeSettingsId) {
+        await updateStoreSettings(storeId, storeSettingsId, storeData, settingsData)
+        toast.success("Store settings updated")
+      } else {
+        await createStoreSettings(storeData, settingsData)
+        toast.success("Store settings saved")
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to save store settings.",
+      )
+    }
   }
 
   return (

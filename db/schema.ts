@@ -691,6 +691,9 @@ export const store = pgTable("store", {
   }).defaultNow().notNull(),
 });
 
+export type InsertStore = typeof store.$inferInsert;
+export type SelectStore = typeof store.$inferSelect;
+
 export const storeSettings = pgTable("store_settings", {
   id: uuid("id").defaultRandom().primaryKey(),
 
@@ -739,6 +742,23 @@ export const storeSettings = pgTable("store_settings", {
     withTimezone: true,
   }).defaultNow().notNull(),
 });
+
+export type InsertStoreSettings = typeof storeSettings.$inferInsert;
+export type SelectStoreSettings = typeof storeSettings.$inferSelect;
+
+export const storeRelations = relations(store, ({ many }) => ({
+  settings: many(storeSettings),
+}));
+
+export const storeSettingsRelations = relations(
+  storeSettings,
+  ({ one }) => ({
+    store: one(store, {
+      fields: [storeSettings.storeId],
+      references: [store.id],
+    }),
+  }),
+);
 
 // SCHEMA
 export const schema = {

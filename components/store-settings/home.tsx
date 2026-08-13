@@ -1,27 +1,29 @@
 import { StoreSettingsForm } from "@/components/store-settings/form"
+import { getStoreSettings } from "@/lib/actions/store-settings";
 
 export default async function StoreSettingsHome() {
-  // TODO:
-  // Ambil store + store_settings dari database
 
+  const { store, settings } = await getStoreSettings();
   const initialData = {
-    name: "My Store",
-    code: "STORE-001",
-    address: "",
-    phone: "",
-    email: "",
-    logoUrl: "",
+    storeId: store?.id ?? "",
+    storeSettingsId: settings?.id ?? "",
+    name: store?.name ?? "My Store",
+    code: store?.code ?? "STORE-001",
+    address: store?.address ?? "",
+    phone: store?.phone ?? "",
+    email: store?.email ?? "",
+    logoUrl: store?.logoUrl ?? "",
 
-    receiptHeader: "",
-    receiptFooter: "",
+    receiptHeader: settings?.receiptHeader ?? "",
+    receiptFooter: settings?.receiptFooter ?? "",
 
-    taxEnabled: false,
-    taxRate: "0",
+    taxEnabled: settings?.taxEnabled ?? false,
+    taxRate: settings?.taxRate ?? "0",
 
-    currency: "IDR",
-    timezone: "Asia/Jakarta",
+    currency: settings?.currency ?? "IDR",
+    timezone: settings?.timezone ?? "Asia/Jakarta",
 
-    allowNegativeStock: false,
+    allowNegativeStock: settings?.allowNegativeStock ?? false,
   }
 
   return (
