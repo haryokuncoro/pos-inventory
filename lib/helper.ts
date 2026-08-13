@@ -33,27 +33,25 @@ export function parseAmount(value: string) {
 export function generateSku(productName: string, variantName: string): string {
   const normalize = (value: string) =>
     value
-      .trim()
       .toUpperCase()
       .replace(/[^A-Z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+      .replace(/^-|-$/g, "");
 
-  const product = normalize(productName);
-  const variant = normalize(variantName);
+  const productCode = normalize(productName).split("-").slice(0, 3).join("");
 
-  if (!product && !variant) {
-    return "";
-  }
+  const variantCode = variantName
+    ? normalize(variantName).split("-").slice(0, 2).join("")
+    : "";
 
-  if (!variant) {
-    return product;
-  }
+  const random = crypto
+    .randomUUID()
+    .replace(/-/g, "")
+    .slice(0, 6)
+    .toUpperCase();
 
-  if (!product) {
-    return variant;
-  }
-
-  return `${product}-${variant}`;
+  return variantCode
+    ? `${productCode}-${variantCode}-${random}`
+    : `${productCode}-${random}`;
 }
 
 export function roundMoney(value: number) {

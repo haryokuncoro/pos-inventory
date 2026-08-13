@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import type { Dispatch, SetStateAction } from "react"
-import type { UseFieldArrayReturn, UseFormReturn } from "react-hook-form"
+import { useWatch } from "react-hook-form"
+import type { UseFieldArrayReturn, UseFormReturn, UseFormSetValue } from "react-hook-form"
 
 
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,7 @@ import type {
   ProductFormValues,
   ProductRow,
 } from "./table"
+import { generateSku } from "@/lib/helper"
 
 // Types
 
@@ -230,6 +232,7 @@ function FormCheckbox<T extends FieldValues>({
 
 type VariantFormProps = {
   control: Control<ProductFormValues>
+  setValue: UseFormSetValue<ProductFormValues>
   index: number
   canRemove: boolean
   onRemove: () => void
@@ -237,14 +240,43 @@ type VariantFormProps = {
 
 function VariantForm({
   control,
+  setValue,
   index,
   canRemove,
   onRemove,
 }: VariantFormProps) {
   const prefix = `variants.${index}` as const
+  const productName = useWatch({
+    control,
+    name: "name",
+  })
+
+  const variantName = useWatch({
+    control,
+    name: `${prefix}.name`,
+  })
+
+  const canGenerateSku =
+    Boolean(productName?.trim()) &&
+    Boolean(variantName?.trim())
+
+  const handleGenerateSku = () => {
+    if (!canGenerateSku) {
+      return
+    }
+
+    setValue(
+      `${prefix}.sku`,
+      generateSku(productName, variantName),
+      {
+        shouldDirty: true,
+        shouldValidate: true,
+      },
+    )
+  }
 
   return (
-    <div className="space-y-3 rounded-lg border p-3">
+    <div className="space-y-5 rounded-lg border p-5">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">
           Variant {index + 1}
@@ -262,17 +294,51 @@ function VariantForm({
         )}
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <FormInput
-          control={control}
-          name={`${prefix}.sku`}
-          id={`variant-sku-${index}`}
-          label="SKU"
-          placeholder="SKU"
-          rules={{
-            required: "SKU is required.",
-          }}
-        />
+        <div className="grid gap-3 md:grid-cols-2">
+        {/* SKU */}
+        <div className="space-y-2">
+          <Label htmlFor={`variant-sku-${index}`}>
+            SKU
+          </Label>
+
+          <Controller
+            control={control}
+            name={`${prefix}.sku`}
+            rules={{
+              required: "SKU is required.",
+            }}
+            render={({ field, fieldState }) => (
+              <div className="space-y-1">
+                <div className="flex gap-2">
+                  <Input
+                    id={`variant-sku-${index}`}
+                    placeholder="SKU"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                  />
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateSku}
+                    disabled={!canGenerateSku}
+                  >
+                    Generate
+                  </Button>
+                </div>
+
+                {fieldState.error && (
+                  <p className="text-sm text-destructive">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+        </div>
 
         <FormInput
           control={control}
@@ -381,7 +447,7 @@ export default function ProductDialogForm({
         render={<Button variant="outline">Add product</Button>}
       />
 
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent className="flex w-full max-w-2xl flex-col gap-4 sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Update product" : "Create product"}
@@ -487,6 +553,7 @@ export default function ProductDialogForm({
                 <VariantForm
                   key={variant.id ?? `new-${index}`}
                   control={form.control}
+                  setValue={form.setValue}
                   index={index}
                   canRemove={variantFields.length > 1}
                   onRemove={() => onRemoveVariant(index)}
