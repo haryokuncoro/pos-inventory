@@ -40,7 +40,7 @@ type ProductTableProps = {
 
 export default function ProductTable({ initialProducts }: ProductTableProps) {
   const router = useRouter()
-   const [session, setSession] = useState<typeof authClient.$Infer.Session | null>(null)
+  const [session, setSession] = useState<typeof authClient.$Infer.Session | null>(null)
 
   useEffect(() => {
     authClient.getSession().then(({ data }) => setSession(data))

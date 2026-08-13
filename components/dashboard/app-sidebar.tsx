@@ -74,9 +74,13 @@ const data = {
       title: "Settings",
       url: "#",
       items: [
-         {
+        {
           title: "Store",
           url: "/dashboard/settings/store",
+        },
+        {
+          title: "Profile",
+          url: "/dashboard/settings/profile",
         },
         {
           title: "Logout",
