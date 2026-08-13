@@ -25,17 +25,17 @@ const profileSettingSchema = z.object({
   name: z
     .string()
     .min(1, "Name is required")
-    .max(150, "Name must be at most 150 characters"),
+    .max(50, "Name must be at most 50 characters"),
   currentPassword: z.string(),
   password: z
     .string()
     .refine(
-      (value) => value === "" || (value.length >= 6 && value.length <= 100),
-      "Password must be between 6 and 100 characters",
+      (value) => value === "" || (value.length >= 6 && value.length <= 12),
+      "Password must be between 6 and 12 characters",
     ),
   email: z
     .string()
-    .max(150, "Email must be at most 150 characters")
+    .max(50, "Email must be at most 50 characters")
     .refine(
       (value) => value === "" || z.string().email().safeParse(value).success,
       "Invalid email address",
