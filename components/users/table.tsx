@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
-
 import type { SelectUser } from "@/db/schema"
 import {
   createUser,
@@ -17,15 +16,7 @@ import UserDialogForm from "./dialog-form"
 import UserList from "./list"
 import UserToolbar from "./toolbar"
 import GeneralPagination from "@/components/dashboard/pagination"
-
-const userSchema = z.object({
-  name: z.string().trim().min(1, "User name is required."),
-  email: z.string().trim().email("Valid email is required."),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters.")
-    .or(z.literal("")),
-})
+import { userSchema } from "@/lib/validations/user"
 
 export type UserFormValues = z.infer<typeof userSchema>
 
@@ -38,10 +29,8 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
-
   const [selectedUser, setSelectedUser] = useState<SelectUser | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
     defaultValues: {
@@ -143,7 +132,16 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
         })
 
         if (createdUser) {
-          setUsers((currentUsers) => [createdUser, ...currentUsers])
+          const newUser: SelectUser = {
+            ...createdUser,
+            image: createdUser.image ?? null,
+            role: createdUser.role ?? null,
+            banned: createdUser.banned ?? null,
+            banReason: createdUser.banReason ?? null,
+            banExpires: createdUser.banExpires ?? null,
+          }
+
+          setUsers((currentUsers) => [...currentUsers, newUser])
         }
 
         toast.success("User created")
@@ -156,6 +154,8 @@ export default function UsersTable({ initialUsers }: UsersTableProps) {
       )
     }
   }
+
+
 
   const handleDelete = async (userId: string) => {
     const confirmed = window.confirm("Delete this user?")
