@@ -10,7 +10,7 @@ import {
     WalletCards,
 } from "lucide-react";
 import { formatRupiah } from "@/lib/helper";
-import { CartItem, PaymentMethod, PaymentButton } from "./pos";
+import { CartItem, PaymentMethod, PaymentButton, DiscountType } from "./pos";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
@@ -27,6 +27,9 @@ export type CartContentProps = {
     cashReceived: number;
     changeAmount: number;
 
+    discountType: DiscountType;
+    discountValueInput: string;
+
     isSubmitting: boolean;
 
     transactionId?: string | null;
@@ -36,6 +39,14 @@ export type CartContentProps = {
     ) => void;
 
     onCashReceivedChange: (
+        value: string,
+    ) => void;
+
+    onDiscountTypeChange: (
+        type: DiscountType,
+    ) => void;
+
+    onDiscountValueChange: (
         value: string,
     ) => void;
 
@@ -61,10 +72,14 @@ export function CartContent({
     cashReceivedInput,
     cashReceived,
     changeAmount,
+    discountType,
+    discountValueInput,
     isSubmitting,
     transactionId,
     onPaymentMethodChange,
     onCashReceivedChange,
+    onDiscountTypeChange,
+    onDiscountValueChange,
     onIncreaseQuantity,
     onDecreaseQuantity,
     onRemoveFromCart,
@@ -114,7 +129,7 @@ export function CartContent({
                                     <p className="shrink-0 font-medium">
                                         {formatRupiah(
                                             item.sellingPrice *
-                                                item.quantity,
+                                            item.quantity,
                                         )}
                                     </p>
                                 </div>
@@ -222,6 +237,83 @@ export function CartContent({
                         </span>
                     </div>
                 </div>
+
+                {/* Discount */}
+                {!paymentSuccess && (
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">
+                            Diskon
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button
+                                type="button"
+                                variant={
+                                    discountType ===
+                                        "FIXED"
+                                        ? "default"
+                                        : "outline"
+                                }
+                                className="justify-center"
+                                onClick={() =>
+                                    onDiscountTypeChange(
+                                        "FIXED",
+                                    )
+                                }
+                            >
+                                Nominal
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant={
+                                    discountType ===
+                                        "PERCENTAGE"
+                                        ? "default"
+                                        : "outline"
+                                }
+                                className="justify-center"
+                                onClick={() =>
+                                    onDiscountTypeChange(
+                                        "PERCENTAGE",
+                                    )
+                                }
+                            >
+                                Persen (%)
+                            </Button>
+                        </div>
+
+                        <Input
+                            type="number"
+                            min={0}
+                            max={
+                                discountType ===
+                                    "PERCENTAGE"
+                                    ? 100
+                                    : undefined
+                            }
+                            step={
+                                discountType ===
+                                    "PERCENTAGE"
+                                    ? "1"
+                                    : "1000"
+                            }
+                            inputMode="numeric"
+                            placeholder={
+                                discountType ===
+                                    "PERCENTAGE"
+                                    ? "Masukkan persen diskon"
+                                    : "Masukkan nominal diskon"
+                            }
+                            value={discountValueInput}
+                            onChange={(event) =>
+                                onDiscountValueChange(
+                                    event.target.value,
+                                )
+                            }
+                        />
+                    </div>
+                )}
 
                 {/* Payment method */}
                 {!paymentSuccess && (

@@ -46,6 +46,8 @@ export type PaymentMethod =
     | "CARD"
     | "TRANSFER";
 
+export type DiscountType = "FIXED" | "PERCENTAGE";
+
 export type CategoryItem = {
     id: string;
     label: string;
@@ -125,6 +127,12 @@ export function PosPage({
         React.useState<PaymentMethod>("CASH");
 
     const [cashReceivedInput, setCashReceivedInput] =
+        React.useState("");
+
+    const [discountType, setDiscountType] =
+        React.useState<DiscountType>("FIXED");
+
+    const [discountValueInput, setDiscountValueInput] =
         React.useState("");
 
     const [cartOpen, setCartOpen] =
@@ -324,6 +332,8 @@ export function PosPage({
     function clearCart() {
         setCart([]);
         setCashReceivedInput("");
+        setDiscountType("FIXED");
+        setDiscountValueInput("");
     }
 
     // CHECKOUT
@@ -355,6 +365,14 @@ export function PosPage({
                     variantId: item.id,
                     quantity: item.quantity,
                 })),
+                discountType:
+                    discountValue > 0
+                        ? discountType
+                        : undefined,
+                discountValue:
+                    discountValue > 0
+                        ? discountValue
+                        : undefined,
                 payment: {
                     method: paymentMethod,
                     amount:
@@ -417,7 +435,20 @@ export function PosPage({
         0,
     );
 
-    const discount = 0;
+    const discountValue = parseAmount(
+        discountValueInput,
+    );
+
+    const rawDiscount =
+        discountType === "PERCENTAGE"
+            ? (subtotal * discountValue) / 100
+            : discountValue;
+
+    const discount = Math.min(
+        Math.max(rawDiscount, 0),
+        subtotal,
+    );
+
     const tax = 0;
 
     const total =
@@ -442,6 +473,8 @@ export function PosPage({
         cashReceivedInput,
         cashReceived,
         changeAmount,
+        discountType,
+        discountValueInput,
         isSubmitting,
         transactionId,
 
@@ -450,6 +483,12 @@ export function PosPage({
 
         onCashReceivedChange:
             setCashReceivedInput,
+
+        onDiscountTypeChange:
+            setDiscountType,
+
+        onDiscountValueChange:
+            setDiscountValueInput,
 
         onIncreaseQuantity:
             increaseQuantity,

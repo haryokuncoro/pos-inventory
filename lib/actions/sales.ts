@@ -37,6 +37,10 @@ export type CreateSaleInput = {
 
   items: CreateSaleItemInput[];
 
+  discountType?: "FIXED" | "PERCENTAGE";
+
+  discountValue?: number;
+
   discountAmount?: number;
 
   taxAmount?: number;
@@ -352,20 +356,44 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
       }
     }
 
-    const discountAmount = roundMoney(
-      input.discountAmount ?? 0,
+    if (
+      input.discountType &&
+      input.discountType !== "FIXED" &&
+      input.discountType !== "PERCENTAGE"
+    ) {
+      return {
+        success: false,
+        message: "Tipe diskon tidak valid.",
+      };
+    }
+
+    const discountValue = roundMoney(
+      input.discountValue ?? 0,
     );
 
-    const taxAmount = roundMoney(
-      input.taxAmount ?? 0,
-    );
-
-    if (discountAmount < 0) {
+    if (
+      input.discountType &&
+      (!Number.isFinite(discountValue) || discountValue < 0)
+    ) {
       return {
         success: false,
         message: "Diskon tidak valid.",
       };
     }
+
+    if (
+      input.discountType === "PERCENTAGE" &&
+      discountValue > 100
+    ) {
+      return {
+        success: false,
+        message: "Diskon persen tidak boleh lebih dari 100.",
+      };
+    }
+
+    const taxAmount = roundMoney(
+      input.taxAmount ?? 0,
+    );
 
     if (taxAmount < 0) {
       return {
@@ -469,6 +497,18 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
       items.reduce((sum, item) => sum + item.subtotal, 0),
     );
 
+    // Discount amount is always recomputed server-side from type + value.
+    const rawDiscountAmount =
+      input.discountType === "PERCENTAGE"
+        ? (subtotal * discountValue) / 100
+        : input.discountType === "FIXED"
+          ? discountValue
+          : 0;
+
+    const discountAmount = roundMoney(
+      Math.min(Math.max(rawDiscountAmount, 0), subtotal),
+    );
+
     const totalAmount = roundMoney(subtotal - discountAmount + taxAmount);
 
     if (totalAmount < 0) {
@@ -489,6 +529,10 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
         invoiceNumber,
         cashierId,
         subtotal: money(subtotal),
+        discountType: input.discountType ?? null,
+        discountValue: input.discountType
+          ? money(discountValue)
+          : null,
         discountAmount: money(discountAmount),
         taxAmount: money(taxAmount),
         totalAmount: money(totalAmount),
