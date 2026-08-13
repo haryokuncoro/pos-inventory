@@ -7,7 +7,7 @@ import {
   productVariant,
   inventoryTransaction,
 } from "@/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import {
   productImportRowSchema,
   type ProductImportRow,
@@ -22,25 +22,30 @@ export async function importProducts(rows: unknown[], userId: string) {
     throw new Error("No products to import");
   }
 
-  await db.transaction(async (tx) => {
-    // --------------------------------
-    // 1. Check duplicate SKU in CSV
-    // --------------------------------
-
+  return db.transaction(async (tx) => {
+    /*
+     * 1. Check duplicate SKU inside CSV
+     */
     const skuSet = new Set<string>();
+    const duplicateSkus = new Set<string>();
 
     for (const row of validatedRows) {
       if (skuSet.has(row.sku)) {
-        throw new Error(`Duplicate SKU in CSV: ${row.sku}`);
+        duplicateSkus.add(row.sku);
       }
 
       skuSet.add(row.sku);
     }
 
-    // --------------------------------
-    // 2. Check SKU against database
-    // --------------------------------
+    if (duplicateSkus.size > 0) {
+      throw new Error(
+        `Duplicate SKU in CSV: ${Array.from(duplicateSkus).join(", ")}`,
+      );
+    }
 
+    /*
+     * 2. Check SKU against database
+     */
     const skus = validatedRows.map((row) => row.sku);
 
     const existingVariants = await tx.query.productVariant.findMany({
@@ -58,94 +63,163 @@ export async function importProducts(rows: unknown[], userId: string) {
       );
     }
 
-    // --------------------------------
-    // 3. Import each row
-    // --------------------------------
+    /*
+     * 3. Load all required categories once
+     */
+    const categoryNames = [
+      ...new Set(validatedRows.map((row) => row.category)),
+    ];
 
-    for (const row of validatedRows) {
-      // ------------------------------
-      // Find category
-      // ------------------------------
+    const existingCategories = await tx.query.category.findMany({
+      where: inArray(category.name, categoryNames),
+    });
 
-      let categoryRecord = await tx.query.category.findFirst({
-        where: eq(category.name, row.category),
-      });
+    const categoryMap = new Map(
+      existingCategories.map((item) => [item.name, item]),
+    );
 
-      // ------------------------------
-      // Create category if not found
-      // ------------------------------
-
-      if (!categoryRecord) {
-        const [createdCategory] = await tx
-          .insert(category)
-          .values({
-            name: row.category,
-          })
-          .returning();
-
-        categoryRecord = createdCategory;
+    /*
+     * 4. Create missing categories
+     */
+    for (const categoryName of categoryNames) {
+      if (categoryMap.has(categoryName)) {
+        continue;
       }
 
-      // ------------------------------
-      // Create product
-      // ------------------------------
+      const [createdCategory] = await tx
+        .insert(category)
+        .values({
+          name: categoryName,
+        })
+        .returning();
 
+      categoryMap.set(categoryName, createdCategory);
+    }
+
+    /*
+     * 5. Group CSV rows by product identity
+     *
+     * Product identity:
+     * name + category
+     */
+    const productGroups = new Map<string, ProductImportRow[]>();
+
+    for (const row of validatedRows) {
+      const key = `${row.name.trim().toLowerCase()}::${row.category
+        .trim()
+        .toLowerCase()}`;
+
+      const group = productGroups.get(key);
+
+      if (group) {
+        group.push(row);
+      } else {
+        productGroups.set(key, [row]);
+      }
+    }
+
+    /*
+     * 6. Validate duplicate variant name
+     *    within the same product.
+     */
+    for (const rows of productGroups.values()) {
+      const variantNameSet = new Set<string>();
+
+      for (const row of rows) {
+        const variantKey = row.variantName.trim().toLowerCase();
+
+        if (variantNameSet.has(variantKey)) {
+          throw new Error(
+            `Duplicate variant "${row.variantName}" for product "${row.name}"`,
+          );
+        }
+
+        variantNameSet.add(variantKey);
+      }
+    }
+
+    /*
+     * 7. Create products and variants
+     */
+    let productCount = 0;
+    let variantCount = 0;
+    let inventoryTransactionCount = 0;
+
+    for (const productRows of productGroups.values()) {
+      const firstRow = productRows[0];
+
+      const categoryRecord = categoryMap.get(firstRow.category);
+
+      if (!categoryRecord) {
+        throw new Error(`Category not found: ${firstRow.category}`);
+      }
+
+      /*
+       * Create ONE product for the group.
+       */
       const [createdProduct] = await tx
         .insert(product)
         .values({
           categoryId: categoryRecord.id,
-
-          name: row.name,
+          name: firstRow.name,
         })
         .returning();
 
-      // ------------------------------
-      // Create variant
-      // ------------------------------
+      productCount++;
 
-      const [createdVariant] = await tx
-        .insert(productVariant)
-        .values({
-          productId: createdProduct.id,
+      /*
+       * Create variants.
+       */
+      for (const row of productRows) {
+        const [createdVariant] = await tx
+          .insert(productVariant)
+          .values({
+            productId: createdProduct.id,
 
-          sku: row.sku,
+            sku: row.sku,
 
-          name: row.variantName,
+            name: row.variantName,
 
-          costPrice: row.costPrice.toString(),
+            costPrice: row.costPrice.toString(),
 
-          sellingPrice: row.sellingPrice.toString(),
+            sellingPrice: row.sellingPrice.toString(),
 
-          stockQuantity: row.stockQuantity,
-        })
-        .returning();
+            stockQuantity: row.stockQuantity,
+          })
+          .returning();
 
-      // ------------------------------
-      // Create inventory transaction
-      // ------------------------------
+        variantCount++;
 
-      if (row.stockQuantity > 0) {
-        await tx.insert(inventoryTransaction).values({
-          variantId: createdVariant.id,
+        /*
+         * Create initial inventory transaction.
+         */
+        if (row.stockQuantity > 0) {
+          await tx.insert(inventoryTransaction).values({
+            variantId: createdVariant.id,
 
-          type: "ADJUSTMENT_IN",
+            type: "ADJUSTMENT_IN",
 
-          quantity: row.stockQuantity,
+            quantity: row.stockQuantity,
 
-          referenceType: "PRODUCT_IMPORT",
+            referenceType: "PRODUCT_IMPORT",
 
-          referenceId: createdVariant.id,
+            referenceId: createdVariant.id,
 
-          reason: "Initial stock import",
+            reason: "Initial stock import",
 
-          createdBy: userId,
-        });
+            createdBy: userId,
+          });
+
+          inventoryTransactionCount++;
+        }
       }
     }
-  });
 
-  return {
-    success: true,
-    count: validatedRows.length,
-  };
+    return {
+      success: true,
+      productCount,
+      variantCount,
+      inventoryTransactionCount,
+    };
+  });
 }

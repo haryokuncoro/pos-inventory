@@ -50,10 +50,6 @@ const data = {
           url: "/dashboard/products",
         },
         {
-          title: "Import Products",
-          url: "/dashboard/products/import",
-        },
-        {
           title: "Manage Categories",
           url: "/dashboard/categories",
         }
