@@ -2,11 +2,13 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/db/drizzle";
+import {revalidatePath} from "next/cache";
 import { user, InsertUser } from "@/db/schema";
 import { eq } from "drizzle-orm"; 
 import { headers } from "next/headers"
+const USER_PATH = "/dashboard/users";
 
- export async function signIn(email: string, password: string) {
+export async function signIn(email: string, password: string) {
     try { 
         await auth.api.signInEmail({
             body:{
@@ -21,23 +23,23 @@ import { headers } from "next/headers"
     }
 }
 
- export async function signUp(name: string, email: string, password: string) {
+export async function signUp(name: string, email: string, password: string) {
     try {
         await auth.api.signUpEmail({
-           body:{
-               email,
-               password,
-               name
-           }
+            body:{
+                email,
+                password,
+                name
+            }
         })
         return { success: true, message: "Sign-up successful" };
     } catch (error) {
         console.error(error);
         return { success: false, message: "Sign-up failed" };
     }
- }
+}
 
- export async function checkPermission(permissions: { [key: string]: string[] }) {
+export async function checkPermission(permissions: { [key: string]: string[] }) {
     try {
         const session = await auth.api.getSession({
             headers: await headers(),
@@ -47,7 +49,7 @@ import { headers } from "next/headers"
                 userId: session?.user?.id,
                 permissions: permissions,
             },
-            });
+        });
         return hasPermission.success;
     } catch (error) {
         console.error(error);
@@ -61,12 +63,12 @@ type CreateUserInput = {
     email: string;
     password: string;
 };
- 
- type UpdateUserInput = Partial<
-   Omit<InsertUser, "id" | "createdAt" | "updatedAt">
- >;
 
- export async function getAllUsers() {
+type UpdateUserInput = Partial<
+Omit<InsertUser, "id" | "createdAt" | "updatedAt">
+>;
+
+export async function getAllUsers() {
     try {
         const users = await db.select().from(user);
         return users;
@@ -90,30 +92,27 @@ export async function getUserById(id: string) {
 export async function createUser(
     userData: CreateUserInput
 ) {
-  try {
-        await auth.api.signUpEmail({
+    try {
+        const createdUser = await auth.api.createUser({
             body: {
                 name: userData.name,
                 email: userData.email,
                 password: userData.password,
             },
         });
-
-        const [createdUser] = await db
-            .select()
-            .from(user)
-            .where(eq(user.email, userData.email));
-
-    return createdUser;
-  } catch (error) {
-    console.error("Error creating user:", error);
-    throw new Error("Failed to create user");
-  }
+        
+        revalidatePath(USER_PATH);
+        return createdUser;
+    } catch (error) {
+        console.error("Error creating user:", error);
+        throw new Error("Failed to create user");
+    }
 }
 
 export async function updateUser(id: string, userData: UpdateUserInput) {
     try {
         const [updatedUser] = await db.update(user).set(userData).where(eq(user.id, id)).returning();
+        revalidatePath(USER_PATH);
         return updatedUser;
     } catch (error) {
         console.error(error);
@@ -124,6 +123,7 @@ export async function updateUser(id: string, userData: UpdateUserInput) {
 export async function deleteUser(id: string) {
     try {
         await db.delete(user).where(eq(user.id, id));
+        revalidatePath(USER_PATH);
     } catch (error) {
         console.error(error);
         throw new Error(`Failed to delete user with id ${id}`);
