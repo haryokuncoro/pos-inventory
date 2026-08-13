@@ -1,125 +1,83 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { db } from "@/db/drizzle";
+import { category, InsertCategory } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-import { db } from "@/db/drizzle";
-import { category } from "@/db/schema";
+type CreateCategoryInput = Omit<
+  InsertCategory,
+  "id" | "createdAt" | "updatedAt"
+>;
 
-import {
-  createCategorySchema,
-  updateCategorySchema,
-  type CreateCategoryInput,
-  type UpdateCategoryInput,
-} from "@/lib/validations/category";
-
-import { handleAction } from "@/lib/helper";
-
-const CATEGORY_PATH = "/dashboard/category";
+type UpdateCategoryInput = Partial<
+  Omit<InsertCategory, "id" | "createdAt" | "updatedAt">
+>;
 
 export async function getAllCategories() {
-  return handleAction(
-    () => db.select().from(category),
-    "Failed to fetch categories",
-  );
+  try {
+    return await db.select().from(category);
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    throw new Error("Failed to fetch categories");
+  }
 }
 
 export async function getCategoryById(id: string) {
-  return handleAction(
-    async () => {
-      const [result] = await db
-        .select()
-        .from(category)
-        .where(eq(category.id, id))
-        .limit(1);
-
-      if (!result) {
-        throw new Error("Category not found");
-      }
-
-      return result;
-    },
-    "Failed to fetch category",
-  );
+  try {
+    return await db
+      .select()
+      .from(category)
+      .where(eq(category.id, id));
+  } catch (error) {
+    console.error(`Error fetching category with id ${id}:`, error);
+    throw new Error(`Failed to fetch category with id ${id}`);
+  }
 }
 
 export async function createCategory(
-  input: CreateCategoryInput,
+  categoryData: CreateCategoryInput
 ) {
-  const data = createCategorySchema.parse(input);
+  try {
+    const [createdCategory] = await db
+      .insert(category)
+      .values(categoryData)
+      .returning();
 
-  const result = await handleAction(
-    async () => {
-      const [createdCategory] = await db
-        .insert(category)
-        .values(data)
-        .returning();
-
-      return createdCategory;
-    },
-    "Failed to create category",
-  );
-
-  if (result.success) {
-    revalidatePath(CATEGORY_PATH);
+    revalidatePath("/dashboard/category");
+    return createdCategory;
+  } catch (error) {
+    console.error("Error creating category:", error);
+    throw new Error("Failed to create category");
   }
-
-  return result;
 }
 
 export async function updateCategory(
   id: string,
-  input: UpdateCategoryInput,
+  categoryData: UpdateCategoryInput
 ) {
-  const data = updateCategorySchema.parse(input);
+  try {
+    const [updatedCategory] = await db
+      .update(category)
+      .set(categoryData)
+      .where(eq(category.id, id))
+      .returning();
 
-  const result = await handleAction(
-    async () => {
-      const [updatedCategory] = await db
-        .update(category)
-        .set({
-          ...data,
-          updatedAt: new Date(),
-        })
-        .where(eq(category.id, id))
-        .returning();
-
-      if (!updatedCategory) {
-        throw new Error("Category not found");
-      }
-
-      return updatedCategory;
-    },
-    "Failed to update category",
-  );
-
-  if (result.success) {
-    revalidatePath(CATEGORY_PATH);
+    revalidatePath("/dashboard/category");
+    return updatedCategory;
+  } catch (error) {
+    console.error(`Error updating category with id ${id}:`, error);
+    throw new Error(`Failed to update category with id ${id}`);
   }
-
-  return result;
 }
 
 export async function deleteCategory(id: string) {
-  const result = await handleAction(
-    async () => {
-      const [deletedCategory] = await db
-        .delete(category)
-        .where(eq(category.id, id))
-        .returning();
-
-      if (!deletedCategory) {
-        throw new Error("Category not found");
-      }
-
-      return deletedCategory;
-    },
-    "Failed to delete category",
-  );
-
-  if (result.success) {
-    revalidatePath(CATEGORY_PATH);
+  try {
+    await db
+      .delete(category)
+      .where(eq(category.id, id));
+  } catch (error) {
+    console.error(`Error deleting category with id ${id}:`, error);
+    throw new Error(`Failed to delete category with id ${id}`);
   }
-
-  return result;
 }
