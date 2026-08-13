@@ -1,15 +1,16 @@
 import { Card } from "@/components/ui/card"
-import { getAllSales } from "@/lib/actions/sales"
+import { getAllSales, getSalesReportSummary } from "@/lib/actions/sales"
 import { SalesReportTable } from "./table"
 
 export default async function SalesReportHome() {
-  const [sales] = await Promise.all([
+  const [sales, summary] = await Promise.all([
     getAllSales(),
+    getSalesReportSummary(),
   ])
 
   return (
     <Card className="w-full">
-      <SalesReportTable initialSales={sales}  />
+      <SalesReportTable initialSales={sales} reportSummary={summary} />
     </Card>
   )
 }
