@@ -310,6 +310,7 @@ export async function getSaleProductsPaginated(
 
 export async function createSale( input: CreateSaleInput): Promise<CreateSaleResult> {
   try {
+    
     const session = await auth.api.getSession({
       headers: await headers(),
     });

@@ -40,11 +40,7 @@ type ProductTableProps = {
 
 export default function ProductTable({ initialProducts }: ProductTableProps) {
   const router = useRouter()
-  const [session, setSession] = useState<typeof authClient.$Infer.Session | null>(null)
-
-  useEffect(() => {
-    authClient.getSession().then(({ data }) => setSession(data))
-  }, [])
+  const { data: session } = authClient.useSession()
 
   
   const [products, setProducts] = useState<ProductRow[]>(initialProducts.items)
@@ -56,10 +52,7 @@ export default function ProductTable({ initialProducts }: ProductTableProps) {
   const [totalPages, setTotalPages] = useState(initialProducts.totalPages)
   const [isPending, startTransition] = useTransition()
   const initialLoadCompletedRef = useRef(false)
-
   const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null)
-
- 
 
   const fetchProducts = useCallback(async (
     nextPage = page,

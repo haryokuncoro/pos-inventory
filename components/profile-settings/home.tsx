@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
@@ -18,7 +19,6 @@ import {
 } from "@/components/ui/card"
 import { updateUser } from "@/lib/actions/users";
 import { authClient } from "@/lib/auth-client"
-import { useEffect, useState } from "react"
 
 const profileSettingSchema = z.object({
   userId: z.string(),
@@ -48,11 +48,7 @@ export type ProfileSettingsFormValues = z.infer<
 
 
 export function ProfileSettingsForm() {
-  const [session, setSession] = useState<typeof authClient.$Infer.Session | null>(null)
-
-  useEffect(() => {
-    authClient.getSession().then(({ data }) => setSession(data))
-  }, [])
+  const { data: session } = authClient.useSession()
 
   const form = useForm<ProfileSettingsFormValues>({
     resolver: zodResolver(profileSettingSchema),
@@ -66,19 +62,14 @@ export function ProfileSettingsForm() {
   })
 
   useEffect(() => {
-    if (!session?.user) {
-      return
+    if (session?.user) {
+      form.reset({
+        userId: session.user.id,
+        name: session.user.name ?? "",
+        email: session.user.email ?? "",
+      })
     }
-
-    form.reset({
-      userId: session.user.id,
-      name: session.user.name,
-      password: "",
-      currentPassword: "",
-      email: session.user.email,
-    })
-  }, [form, session])
-
+  }, [session, form])
 
   const {
     control,
