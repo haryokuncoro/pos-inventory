@@ -3,6 +3,7 @@ import {
   uuid,
   pgTable,
   text,
+  varchar,
   timestamp,
   boolean,
   index,
@@ -667,6 +668,78 @@ export const paymentRelations = relations(
   }),
 );
 
+export const store = pgTable("store", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  name: varchar("name", { length: 150 }).notNull(),
+  code: varchar("code", { length: 50 }).notNull().unique(),
+
+  address: text("address"),
+  phone: varchar("phone", { length: 30 }),
+  email: varchar("email", { length: 150 }),
+
+  logoUrl: text("logo_url"),
+
+  isActive: boolean("is_active").notNull().default(true),
+
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+  }).defaultNow().notNull(),
+
+  updatedAt: timestamp("updated_at", {
+    withTimezone: true,
+  }).defaultNow().notNull(),
+});
+
+export const storeSettings = pgTable("store_settings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  storeId: uuid("store_id")
+    .notNull()
+    .unique()
+    .references(() => store.id, {
+      onDelete: "cascade",
+    }),
+
+  receiptHeader: text("receipt_header"),
+  receiptFooter: text("receipt_footer"),
+  
+  taxEnabled: boolean("tax_enabled")
+    .notNull()
+    .default(false),
+
+  taxRate: numeric("tax_rate", {
+    precision: 5,
+    scale: 2,
+  })
+    .notNull()
+    .default("0"),
+
+  currency: varchar("currency", {
+    length: 3,
+  })
+    .notNull()
+    .default("IDR"),
+
+  timezone: varchar("timezone", {
+    length: 50,
+  })
+    .notNull()
+    .default("Asia/Jakarta"),
+
+  allowNegativeStock: boolean("allow_negative_stock")
+    .notNull()
+    .default(false),
+
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+  }).defaultNow().notNull(),
+
+  updatedAt: timestamp("updated_at", {
+    withTimezone: true,
+  }).defaultNow().notNull(),
+});
+
 // SCHEMA
 export const schema = {
   // Auth
@@ -687,4 +760,6 @@ export const schema = {
   sale,
   saleItem,
   payment,
+  store,
+  storeSettings,
 };
