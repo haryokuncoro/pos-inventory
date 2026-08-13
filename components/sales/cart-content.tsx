@@ -30,6 +30,8 @@ export type CartContentProps = {
     discountType: DiscountType;
     discountValueInput: string;
 
+    taxValueInput: string;
+
     isSubmitting: boolean;
 
     transactionId?: string | null;
@@ -47,6 +49,10 @@ export type CartContentProps = {
     ) => void;
 
     onDiscountValueChange: (
+        value: string,
+    ) => void;
+
+    onTaxValueChange: (
         value: string,
     ) => void;
 
@@ -74,12 +80,14 @@ export function CartContent({
     changeAmount,
     discountType,
     discountValueInput,
+    taxValueInput,
     isSubmitting,
     transactionId,
     onPaymentMethodChange,
     onCashReceivedChange,
     onDiscountTypeChange,
     onDiscountValueChange,
+    onTaxValueChange,
     onIncreaseQuantity,
     onDecreaseQuantity,
     onRemoveFromCart,
@@ -308,6 +316,30 @@ export function CartContent({
                             value={discountValueInput}
                             onChange={(event) =>
                                 onDiscountValueChange(
+                                    event.target.value,
+                                )
+                            }
+                        />
+                    </div>
+                )}
+
+                {/* Tax */}
+                {!paymentSuccess && (
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">
+                            Pajak (%)
+                        </p>
+
+                        <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step="1"
+                            inputMode="numeric"
+                            placeholder="Masukkan persen pajak"
+                            value={taxValueInput}
+                            onChange={(event) =>
+                                onTaxValueChange(
                                     event.target.value,
                                 )
                             }

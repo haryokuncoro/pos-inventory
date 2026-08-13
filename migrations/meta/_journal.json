@@ -29,6 +29,13 @@
       "when": 1786601331851,
       "tag": "0003_add-tax-type",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786601625083,
+      "tag": "0004_add-tax-value",
+      "breakpoints": true
     }
   ]
 }

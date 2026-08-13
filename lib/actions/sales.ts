@@ -41,9 +41,7 @@ export type CreateSaleInput = {
 
   discountValue?: number;
 
-  discountAmount?: number;
-
-  taxAmount?: number;
+  taxValue?: number;
 
   payment: {
     method:
@@ -391,14 +389,21 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
       };
     }
 
-    const taxAmount = roundMoney(
-      input.taxAmount ?? 0,
+    const taxValue = roundMoney(
+      input.taxValue ?? 0,
     );
 
-    if (taxAmount < 0) {
+    if (!Number.isFinite(taxValue) || taxValue < 0) {
       return {
         success: false,
         message: "Pajak tidak valid.",
+      };
+    }
+
+    if (taxValue > 100) {
+      return {
+        success: false,
+        message: "Pajak persen tidak boleh lebih dari 100.",
       };
     }
 
@@ -509,6 +514,13 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
       Math.min(Math.max(rawDiscountAmount, 0), subtotal),
     );
 
+    // Tax is always a percentage applied to the amount after discount.
+    const taxableAmount = Math.max(subtotal - discountAmount, 0);
+
+    const taxAmount = roundMoney(
+      (taxableAmount * taxValue) / 100,
+    );
+
     const totalAmount = roundMoney(subtotal - discountAmount + taxAmount);
 
     if (totalAmount < 0) {
@@ -534,6 +546,7 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
           ? money(discountValue)
           : null,
         discountAmount: money(discountAmount),
+        taxValue: money(taxValue),
         taxAmount: money(taxAmount),
         totalAmount: money(totalAmount),
         status: "COMPLETED",

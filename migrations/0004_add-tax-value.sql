@@ -1,0 +1,1 @@
+ALTER TABLE "sale" DROP COLUMN "tax_type";

@@ -374,7 +374,13 @@ export const sale = pgTable(
     )
       .default("0")
       .notNull(),
-
+    taxValue: numeric(
+      "tax_value",
+      {
+        precision: 15,
+        scale: 2,
+      },
+    ),
     taxAmount: numeric("tax_amount", {
       precision: 15,
       scale: 2,

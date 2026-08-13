@@ -135,6 +135,9 @@ export function PosPage({
     const [discountValueInput, setDiscountValueInput] =
         React.useState("");
 
+    const [taxValueInput, setTaxValueInput] =
+        React.useState("");
+
     const [cartOpen, setCartOpen] =
         React.useState(false);
 
@@ -334,6 +337,7 @@ export function PosPage({
         setCashReceivedInput("");
         setDiscountType("FIXED");
         setDiscountValueInput("");
+        setTaxValueInput("");
     }
 
     // CHECKOUT
@@ -372,6 +376,10 @@ export function PosPage({
                 discountValue:
                     discountValue > 0
                         ? discountValue
+                        : undefined,
+                taxValue:
+                    taxValue > 0
+                        ? taxValue
                         : undefined,
                 payment: {
                     method: paymentMethod,
@@ -449,7 +457,17 @@ export function PosPage({
         subtotal,
     );
 
-    const tax = 0;
+    const taxValue = parseAmount(
+        taxValueInput,
+    );
+
+    const taxableAmount = Math.max(
+        subtotal - discount,
+        0,
+    );
+
+    const tax =
+        (taxableAmount * taxValue) / 100;
 
     const total =
         subtotal - discount + tax;
@@ -475,6 +493,7 @@ export function PosPage({
         changeAmount,
         discountType,
         discountValueInput,
+        taxValueInput,
         isSubmitting,
         transactionId,
 
@@ -489,6 +508,9 @@ export function PosPage({
 
         onDiscountValueChange:
             setDiscountValueInput,
+
+        onTaxValueChange:
+            setTaxValueInput,
 
         onIncreaseQuantity:
             increaseQuantity,
