@@ -68,10 +68,10 @@ export default function CategoryDialogForm({
         }
       }}
     >
-     
-        <DialogTrigger  onClick={onCreate} render={<Button variant="outline">
-          Add category
-        </Button>} />
+
+      <DialogTrigger onClick={onCreate} render={<Button variant="outline">
+        Add category
+      </Button>} />
 
 
       <DialogContent>

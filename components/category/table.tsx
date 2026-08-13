@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
+import { categorySchema } from "@/lib/validations/category"
 
 import type { SelectCategory } from "@/db/schema"
 import {
@@ -16,13 +17,6 @@ import {
 import CategoryDialogForm from "./dialog-form"
 import CategoryList from "./list"
 import CategoryToolbar from "./toolbar"
-
-const categorySchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Category name is required."),
-})
 
 export type CategoryFormValues = z.infer<
   typeof categorySchema
@@ -135,11 +129,11 @@ export default function CategoryTable({
           current.map((category) =>
             category.id === selectedCategory.id
               ? {
-                  ...category,
-                  name:
-                    updatedCategory?.name ??
-                    values.name,
-                }
+                ...category,
+                name:
+                  updatedCategory?.name ??
+                  values.name,
+              }
               : category
           )
         )

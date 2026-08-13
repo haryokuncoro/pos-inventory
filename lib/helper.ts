@@ -1,3 +1,14 @@
+export async function withErrorHandling<T>(
+  action: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error(`Error ${action}:`, error);
+    throw new Error(`Failed ${action}`);
+  }
+}
 
 export function formatRupiah(value: number) {
     return new Intl.NumberFormat("id-ID", {
