@@ -10,24 +10,15 @@ import {
   product,
   productVariant,
   category,
-  user
+  user,
 } from "@/db/schema";
-import {
-  and,
-  desc,
-  eq,
-  gte,
-  ilike,
-  inArray,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, desc, eq, gte, ilike, inArray, or, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { ProductWithCategoryAndVariants } from "./products";
+import { money, roundMoney } from "@/lib/helper";
 
- // TYPES
-
+// TYPES
 export type CreateSaleItemInput = {
   variantId: string;
   quantity: number;
@@ -45,11 +36,7 @@ export type CreateSaleInput = {
   taxValue?: number;
 
   payment: {
-    method:
-      | "CASH"
-      | "QRIS"
-      | "CARD"
-      | "TRANSFER";
+    method: "CASH" | "QRIS" | "CARD" | "TRANSFER";
 
     amount: number;
   };
@@ -90,18 +77,6 @@ export type PaginatedSaleProductsResult = {
   totalPages: number;
 };
 
- // HELPERS
-
-function roundMoney(value: number) {
-  return Math.round(
-    (value + Number.EPSILON) * 100,
-  ) / 100;
-}
-
-function money(value: number) {
-  return roundMoney(value).toFixed(2);
-}
-
 function generateInvoiceNumber() {
   const now = new Date();
 
@@ -120,11 +95,7 @@ function generateInvoiceNumber() {
   return `INV-${date}-${random}`;
 }
 
-/**
- * GET PRODUCTS FOR SALE
- * Only active products and active variants are returned.
- * =========================================================
- */
+// Only active products and active variants are returned.
 
 export async function getSaleProducts(): Promise<
   ProductWithCategoryAndVariants[]
@@ -142,10 +113,7 @@ export async function getSaleProducts(): Promise<
         categoryName: category.name,
       })
       .from(product)
-      .leftJoin(
-        category,
-        eq(product.categoryId, category.id),
-      )
+      .leftJoin(category, eq(product.categoryId, category.id))
       .where(eq(product.isActive, true));
 
     const variants = await db
@@ -155,44 +123,28 @@ export async function getSaleProducts(): Promise<
         sku: productVariant.sku,
         name: productVariant.name,
         costPrice: productVariant.costPrice,
-        sellingPrice:
-          productVariant.sellingPrice,
-        stockQuantity:
-          productVariant.stockQuantity,
+        sellingPrice: productVariant.sellingPrice,
+        stockQuantity: productVariant.stockQuantity,
         isActive: productVariant.isActive,
-        createdAt:
-          productVariant.createdAt,
-        updatedAt:
-          productVariant.updatedAt,
+        createdAt: productVariant.createdAt,
+        updatedAt: productVariant.updatedAt,
       })
       .from(productVariant)
-      .where(
-        eq(productVariant.isActive, true),
-      );
+      .where(eq(productVariant.isActive, true));
 
     return products.map((item) => ({
       ...item,
-      variants: variants.filter(
-        (variant) =>
-          variant.productId === item.id,
-      ),
+      variants: variants.filter((variant) => variant.productId === item.id),
     }));
   } catch (error) {
-    console.error(
-      "Error fetching sale products:",
-      error,
-    );
+    console.error("Error fetching sale products:", error);
 
-    throw new Error(
-      "Failed to fetch sale products",
-    );
+    throw new Error("Failed to fetch sale products");
   }
 }
 
-/**
- * Get sale catalog rows with server-side pagination.
- * Pagination is based on variants, so page size matches rendered product cards.
- */
+// Pagination is based on variants, so page size matches rendered product cards.
+
 export async function getSaleProductsPaginated(
   input: GetSaleProductsPaginatedInput = {},
 ): Promise<PaginatedSaleProductsResult> {
@@ -308,9 +260,10 @@ export async function getSaleProductsPaginated(
  * =========================================================
  */
 
-export async function createSale( input: CreateSaleInput): Promise<CreateSaleResult> {
+export async function createSale(
+  input: CreateSaleInput,
+): Promise<CreateSaleResult> {
   try {
-    
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -326,10 +279,7 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
 
     // BASIC VALIDATION
 
-    if (
-      !input.items ||
-      input.items.length === 0
-    ) {
+    if (!input.items || input.items.length === 0) {
       return {
         success: false,
         message: "Keranjang masih kosong.",
@@ -344,14 +294,10 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
         };
       }
 
-      if (
-        !Number.isInteger(item.quantity) ||
-        item.quantity <= 0
-      ) {
+      if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
         return {
           success: false,
-          message:
-            "Quantity harus lebih dari 0.",
+          message: "Quantity harus lebih dari 0.",
         };
       }
     }
@@ -367,9 +313,7 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
       };
     }
 
-    const discountValue = roundMoney(
-      input.discountValue ?? 0,
-    );
+    const discountValue = roundMoney(input.discountValue ?? 0);
 
     if (
       input.discountType &&
@@ -381,19 +325,14 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
       };
     }
 
-    if (
-      input.discountType === "PERCENTAGE" &&
-      discountValue > 100
-    ) {
+    if (input.discountType === "PERCENTAGE" && discountValue > 100) {
       return {
         success: false,
         message: "Diskon persen tidak boleh lebih dari 100.",
       };
     }
 
-    const taxValue = roundMoney(
-      input.taxValue ?? 0,
-    );
+    const taxValue = roundMoney(input.taxValue ?? 0);
 
     if (!Number.isFinite(taxValue) || taxValue < 0) {
       return {
@@ -411,15 +350,12 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
 
     if (
       !input.payment ||
-      !Number.isFinite(
-        input.payment.amount,
-      ) ||
+      !Number.isFinite(input.payment.amount) ||
       input.payment.amount <= 0
     ) {
       return {
         success: false,
-        message:
-          "Jumlah pembayaran tidak valid.",
+        message: "Jumlah pembayaran tidak valid.",
       };
     }
 
@@ -441,7 +377,6 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
     }
 
     // TRANSACTION
-
     const quantityMap = new Map<string, number>();
 
     for (const item of input.items) {
@@ -469,7 +404,9 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
       throw new Error("Salah satu produk tidak ditemukan.");
     }
 
-    const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
+    const variantMap = new Map(
+      variants.map((variant) => [variant.id, variant]),
+    );
 
     const items = variantIds.map((variantId) => {
       const variant = variantMap.get(variantId);
@@ -519,9 +456,7 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
     // Tax is always a percentage applied to the amount after discount.
     const taxableAmount = Math.max(subtotal - discountAmount, 0);
 
-    const taxAmount = roundMoney(
-      (taxableAmount * taxValue) / 100,
-    );
+    const taxAmount = roundMoney((taxableAmount * taxValue) / 100);
 
     const totalAmount = roundMoney(subtotal - discountAmount + taxAmount);
 
@@ -544,9 +479,7 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
         cashierId,
         subtotal: money(subtotal),
         discountType: input.discountType ?? null,
-        discountValue: input.discountType
-          ? money(discountValue)
-          : null,
+        discountValue: input.discountType ? money(discountValue) : null,
         discountAmount: money(discountAmount),
         taxValue: money(taxValue),
         taxAmount: money(taxAmount),
@@ -620,7 +553,7 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
 
     revalidatePath("/sale");
     revalidatePath("/sales");
-    revalidatePath("/dashboard/product");
+    revalidatePath("/dashboard/products");
 
     return {
       success: true,
@@ -628,53 +561,37 @@ export async function createSale( input: CreateSaleInput): Promise<CreateSaleRes
       invoiceNumber: createdSale.invoiceNumber,
     };
   } catch (error) {
-    console.error(
-      "Error creating sale:",
-      error,
-    );
+    console.error("Error creating sale:", error);
 
     return {
       success: false,
       message:
-        error instanceof Error
-          ? error.message
-          : "Gagal membuat transaksi.",
+        error instanceof Error ? error.message : "Gagal membuat transaksi.",
     };
   }
 }
 
-/**
- * GET SALE BY ID
- */
-
-export async function getSaleById(
-  id: string,
-) {
+// Get sale by ID, including items and payments
+export async function getSaleById(id: string) {
   try {
     const [saleData] = await db
       .select({
         id: sale.id,
-        invoiceNumber:
-          sale.invoiceNumber,
+        invoiceNumber: sale.invoiceNumber,
         cashierId: sale.cashierId,
         cashierName: user.name,
 
         subtotal: sale.subtotal,
-        discountAmount:
-          sale.discountAmount,
+        discountAmount: sale.discountAmount,
         taxAmount: sale.taxAmount,
-        totalAmount:
-          sale.totalAmount,
+        totalAmount: sale.totalAmount,
 
         status: sale.status,
         soldAt: sale.soldAt,
         createdAt: sale.createdAt,
       })
       .from(sale)
-      .innerJoin(
-        user,
-        eq(sale.cashierId, user.id),
-      )
+      .innerJoin(user, eq(sale.cashierId, user.id))
       .where(eq(sale.id, id))
       .limit(1);
 
@@ -686,55 +603,26 @@ export async function getSaleById(
       .select({
         id: saleItem.id,
         saleId: saleItem.saleId,
-        variantId:
-          saleItem.variantId,
+        variantId: saleItem.variantId,
         quantity: saleItem.quantity,
-        unitPrice:
-          saleItem.unitPrice,
-        discountAmount:
-          saleItem.discountAmount,
-        subtotal:
-          saleItem.subtotal,
+        unitPrice: saleItem.unitPrice,
+        discountAmount: saleItem.discountAmount,
+        subtotal: saleItem.subtotal,
 
         sku: productVariant.sku,
-        variantName:
-          productVariant.name,
+        variantName: productVariant.name,
 
-        productId:
-          product.id,
-        productName:
-          product.name,
+        productId: product.id,
+        productName: product.name,
 
-        categoryId:
-          category.id,
-        categoryName:
-          category.name,
+        categoryId: category.id,
+        categoryName: category.name,
       })
       .from(saleItem)
-      .innerJoin(
-        productVariant,
-        eq(
-          saleItem.variantId,
-          productVariant.id,
-        ),
-      )
-      .innerJoin(
-        product,
-        eq(
-          productVariant.productId,
-          product.id,
-        ),
-      )
-      .leftJoin(
-        category,
-        eq(
-          product.categoryId,
-          category.id,
-        ),
-      )
-      .where(
-        eq(saleItem.saleId, id),
-      );
+      .innerJoin(productVariant, eq(saleItem.variantId, productVariant.id))
+      .innerJoin(product, eq(productVariant.productId, product.id))
+      .leftJoin(category, eq(product.categoryId, category.id))
+      .where(eq(saleItem.saleId, id));
 
     const payments = await db
       .select({
@@ -752,14 +640,9 @@ export async function getSaleById(
       payments,
     };
   } catch (error) {
-    console.error(
-      `Error fetching sale ${id}:`,
-      error,
-    );
+    console.error(`Error fetching sale ${id}:`, error);
 
-    throw new Error(
-      `Failed to fetch sale ${id}`,
-    );
+    throw new Error(`Failed to fetch sale ${id}`);
   }
 }
 
@@ -772,55 +655,35 @@ export async function getAllSales() {
     const sales = await db
       .select({
         id: sale.id,
-        invoiceNumber:
-          sale.invoiceNumber,
+        invoiceNumber: sale.invoiceNumber,
 
-        cashierId:
-          sale.cashierId,
+        cashierId: sale.cashierId,
 
-        cashierName:
-          user.name,
+        cashierName: user.name,
 
-        subtotal:
-          sale.subtotal,
+        subtotal: sale.subtotal,
 
-        discountAmount:
-          sale.discountAmount,
+        discountAmount: sale.discountAmount,
 
-        taxAmount:
-          sale.taxAmount,
+        taxAmount: sale.taxAmount,
 
-        totalAmount:
-          sale.totalAmount,
+        totalAmount: sale.totalAmount,
 
-        status:
-          sale.status,
+        status: sale.status,
 
-        soldAt:
-          sale.soldAt,
+        soldAt: sale.soldAt,
 
-        createdAt:
-          sale.createdAt,
+        createdAt: sale.createdAt,
       })
       .from(sale)
-      .innerJoin(
-        user,
-        eq(sale.cashierId, user.id),
-      )
-      .orderBy(
-        desc(sale.soldAt),
-      );
+      .innerJoin(user, eq(sale.cashierId, user.id))
+      .orderBy(desc(sale.soldAt));
 
     return sales;
   } catch (error) {
-    console.error(
-      "Error fetching sales:",
-      error,
-    );
+    console.error("Error fetching sales:", error);
 
-    throw new Error(
-      "Failed to fetch sales",
-    );
+    throw new Error("Failed to fetch sales");
   }
 }
 
@@ -901,53 +764,43 @@ export async function getSalesReportSummary(): Promise<SalesReportSummary> {
           desc(sql<number>`cast(sum(${saleItem.quantity}) as integer)`),
           desc(sql<number>`coalesce(sum(${saleItem.subtotal})::float8, 0)`),
         ),
-    ])
+    ]);
 
     const today = {
       salesCount: Number(todaySummaryRows[0]?.salesCount ?? 0),
       totalRevenue: Number(todaySummaryRows[0]?.totalRevenue ?? 0),
-    }
+    };
 
     const salesByProduct: SalesByProductRow[] = productRows.map((row) => ({
       productName: row.productName,
       categoryName: row.categoryName,
       quantity: Number(row.quantity ?? 0),
       totalRevenue: Number(row.totalRevenue ?? 0),
-    }))
+    }));
 
     const salesByCategory: SalesByCategoryRow[] = categoryRows.map((row) => ({
       categoryName: row.categoryName ?? "Uncategorized",
       quantity: Number(row.quantity ?? 0),
       totalRevenue: Number(row.totalRevenue ?? 0),
-    }))
+    }));
 
     return {
       today,
       salesByProduct,
       salesByCategory,
       bestSellingProducts: salesByProduct.slice(0, 5),
-    }
+    };
   } catch (error) {
-    console.error("Error fetching sales report summary:", error)
+    console.error("Error fetching sales report summary:", error);
 
-    throw new Error("Failed to fetch sales report summary")
+    throw new Error("Failed to fetch sales report summary");
   }
 }
 
-/**
- * GET RECENT SALES
- */
-
-export async function getRecentSales(
-  limit = 20,
-) {
+// GET RECENT SALES
+export async function getRecentSales(limit = 20) {
   const safeLimit = Math.min(
-    Math.max(
-      Number.isFinite(limit)
-        ? Math.floor(limit)
-        : 20,
-      1,
-    ),
+    Math.max(Number.isFinite(limit) ? Math.floor(limit) : 20, 1),
     100,
   );
 
@@ -955,43 +808,27 @@ export async function getRecentSales(
     const sales = await db
       .select({
         id: sale.id,
-        invoiceNumber:
-          sale.invoiceNumber,
+        invoiceNumber: sale.invoiceNumber,
 
-        cashierId:
-          sale.cashierId,
+        cashierId: sale.cashierId,
 
-        cashierName:
-          user.name,
+        cashierName: user.name,
 
-        totalAmount:
-          sale.totalAmount,
+        totalAmount: sale.totalAmount,
 
-        status:
-          sale.status,
+        status: sale.status,
 
-        soldAt:
-          sale.soldAt,
+        soldAt: sale.soldAt,
       })
       .from(sale)
-      .innerJoin(
-        user,
-        eq(sale.cashierId, user.id),
-      )
-      .orderBy(
-        desc(sale.soldAt),
-      )
+      .innerJoin(user, eq(sale.cashierId, user.id))
+      .orderBy(desc(sale.soldAt))
       .limit(safeLimit);
 
     return sales;
   } catch (error) {
-    console.error(
-      "Error fetching recent sales:",
-      error,
-    );
+    console.error("Error fetching recent sales:", error);
 
-    throw new Error(
-      "Failed to fetch recent sales",
-    );
+    throw new Error("Failed to fetch recent sales");
   }
 }

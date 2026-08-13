@@ -14,10 +14,7 @@ import { withErrorHandling } from "@/lib/helper";
 
 const PRODUCTS_PATH = "/dashboard/products";
 
-type CreateProductInput = Omit<
-  InsertProduct,
-  "id" | "createdAt" | "updatedAt"
->;
+type CreateProductInput = Omit<InsertProduct, "id" | "createdAt" | "updatedAt">;
 
 type UpdateProductInput = Partial<
   Omit<InsertProduct, "id" | "createdAt" | "updatedAt">
@@ -212,9 +209,7 @@ export async function getAllProducts(): Promise<
 
     return products.map((product) => ({
       ...product,
-      variants: variants.filter(
-        (variant) => variant.productId === product.id,
-      ),
+      variants: variants.filter((variant) => variant.productId === product.id),
     }));
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -223,12 +218,9 @@ export async function getAllProducts(): Promise<
 }
 
 export async function getCategoryById(id: string) {
-  return withErrorHandling(`fetching category with id ${id}`, async () => {    
+  return withErrorHandling(`fetching category with id ${id}`, async () => {
     try {
-      return await db
-        .select()
-        .from(category)
-        .where(eq(category.id, id));
+      return await db.select().from(category).where(eq(category.id, id));
     } catch (error) {
       console.error(`Error fetching category with id ${id}:`, error);
       throw new Error(`Failed to fetch category with id ${id}`);
@@ -250,7 +242,7 @@ export async function createProduct(
       throw new Error("Failed to create product");
     }
 
-    const createdVariants: typeof productVariant.$inferSelect[] =
+    const createdVariants: (typeof productVariant.$inferSelect)[] =
       variants.length > 0
         ? await db
             .insert(productVariant)
@@ -309,7 +301,7 @@ export async function updateProduct(
       }
     }
 
-    const savedVariants: typeof productVariant.$inferSelect[] = [];
+    const savedVariants: (typeof productVariant.$inferSelect)[] = [];
 
     // Update existing variants or create new ones.
     for (const variant of variants) {
