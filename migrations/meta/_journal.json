@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1786509350462,
-      "tag": "0000_init-table",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1786587888409,
-      "tag": "0001_create-store-and-store-settings",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1786600872033,
-      "tag": "0002_add-discount-type",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1786601331851,
-      "tag": "0003_add-tax-type",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1786601625083,
-      "tag": "0004_add-tax-value",
+      "when": 1786629161765,
+      "tag": "0000_init-tables",
       "breakpoints": true
     }
   ]

@@ -79,7 +79,10 @@ CREATE TABLE "sale" (
 	"invoice_number" text NOT NULL,
 	"cashier_id" text NOT NULL,
 	"subtotal" numeric(15, 2) NOT NULL,
+	"discount_type" text,
+	"discount_value" numeric(15, 2),
 	"discount_amount" numeric(15, 2) DEFAULT '0' NOT NULL,
+	"tax_value" numeric(15, 2),
 	"tax_amount" numeric(15, 2) DEFAULT '0' NOT NULL,
 	"total_amount" numeric(15, 2) NOT NULL,
 	"status" "sale_status" DEFAULT 'COMPLETED' NOT NULL,
@@ -119,6 +122,35 @@ CREATE TABLE "session" (
 	CONSTRAINT "session_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
+CREATE TABLE "store" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(150) NOT NULL,
+	"code" varchar(50) NOT NULL,
+	"address" text,
+	"phone" varchar(30),
+	"email" varchar(150),
+	"logo_url" text,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "store_code_unique" UNIQUE("code")
+);
+--> statement-breakpoint
+CREATE TABLE "store_settings" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"store_id" uuid NOT NULL,
+	"receipt_header" text,
+	"receipt_footer" text,
+	"tax_enabled" boolean DEFAULT false NOT NULL,
+	"tax_rate" numeric(5, 2) DEFAULT '0' NOT NULL,
+	"currency" varchar(3) DEFAULT 'IDR' NOT NULL,
+	"timezone" varchar(50) DEFAULT 'Asia/Jakarta' NOT NULL,
+	"allow_negative_stock" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "store_settings_store_id_unique" UNIQUE("store_id")
+);
+--> statement-breakpoint
 CREATE TABLE "user" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
@@ -153,6 +185,7 @@ ALTER TABLE "sale" ADD CONSTRAINT "sale_cashier_id_user_id_fk" FOREIGN KEY ("cas
 ALTER TABLE "sale_item" ADD CONSTRAINT "sale_item_sale_id_sale_id_fk" FOREIGN KEY ("sale_id") REFERENCES "public"."sale"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sale_item" ADD CONSTRAINT "sale_item_variant_id_product_variant_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variant"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "store_settings" ADD CONSTRAINT "store_settings_store_id_store_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."store"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "inventoryTransaction_variantId_idx" ON "inventory_transaction" USING btree ("variant_id");--> statement-breakpoint
 CREATE INDEX "inventoryTransaction_reference_idx" ON "inventory_transaction" USING btree ("reference_type","reference_id");--> statement-breakpoint
