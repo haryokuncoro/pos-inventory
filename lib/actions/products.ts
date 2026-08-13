@@ -10,6 +10,9 @@ import {
   category,
 } from "@/db/schema";
 import { eq, ilike, inArray, or, sql, desc } from "drizzle-orm";
+import { withErrorHandling } from "@/lib/helper";
+
+const PRODUCTS_PATH = "/dashboard/products";
 
 type CreateProductInput = Omit<
   InsertProduct,
@@ -67,9 +70,6 @@ export type PaginatedProductsResult = {
   totalPages: number;
 };
 
-/**
- * Get products with server-side pagination and search.
- */
 export async function getProductsPaginated(
   input: GetProductsPaginatedInput = {},
 ): Promise<PaginatedProductsResult> {
@@ -177,9 +177,6 @@ export async function getProductsPaginated(
   }
 }
 
-/**
- * Get all products with their variants.
- */
 export async function getAllProducts(): Promise<
   ProductWithCategoryAndVariants[]
 > {
@@ -225,24 +222,20 @@ export async function getAllProducts(): Promise<
   }
 }
 
-/**
- * Get category by ID.
- */
 export async function getCategoryById(id: string) {
-  try {
-    return await db
-      .select()
-      .from(category)
-      .where(eq(category.id, id));
-  } catch (error) {
-    console.error(`Error fetching category with id ${id}:`, error);
-    throw new Error(`Failed to fetch category with id ${id}`);
-  }
+  return withErrorHandling(`fetching category with id ${id}`, async () => {    
+    try {
+      return await db
+        .select()
+        .from(category)
+        .where(eq(category.id, id));
+    } catch (error) {
+      console.error(`Error fetching category with id ${id}:`, error);
+      throw new Error(`Failed to fetch category with id ${id}`);
+    }
+  });
 }
 
-/**
- * Create product with variants.
- */
 export async function createProduct(
   productData: CreateProductInput,
   variants: CreateProductVariantInput[],
@@ -270,7 +263,7 @@ export async function createProduct(
             .returning()
         : [];
 
-    revalidatePath("/dashboard/product");
+    revalidatePath(PRODUCTS_PATH);
 
     return {
       product: createdProduct,
@@ -282,13 +275,6 @@ export async function createProduct(
   }
 }
 
-/**
- * Update product and its variants.
- *
- * Existing variants are updated.
- * New variants are created.
- * Variants removed from the request are deleted.
- */
 export async function updateProduct(
   id: string,
   productData: UpdateProductInput,
@@ -314,9 +300,7 @@ export async function updateProduct(
       .filter((variant) => variant.id)
       .map((variant) => variant.id!);
 
-    /**
-     * Delete variants that no longer exist in the form.
-     */
+    // Delete variants that no longer exist in the form.
     for (const existingVariant of existingVariants) {
       if (!incomingVariantIds.includes(existingVariant.id)) {
         await db
@@ -327,9 +311,7 @@ export async function updateProduct(
 
     const savedVariants: typeof productVariant.$inferSelect[] = [];
 
-    /**
-     * Update existing variants or create new ones.
-     */
+    // Update existing variants or create new ones.
     for (const variant of variants) {
       if (variant.id) {
         const { id: variantId, ...variantData } = variant;
@@ -361,7 +343,7 @@ export async function updateProduct(
       }
     }
 
-    revalidatePath("/dashboard/product");
+    revalidatePath(PRODUCTS_PATH);
 
     return {
       product: updatedProduct,
@@ -373,19 +355,10 @@ export async function updateProduct(
   }
 }
 
-/**
- * Delete product.
- *
- * productVariant.productId has ON DELETE CASCADE,
- * so its variants are automatically deleted.
- */
 export async function deleteProduct(id: string) {
-  try {
+  withErrorHandling(`deleting product with id ${id}`, async () => {
     await db.delete(product).where(eq(product.id, id));
 
-    revalidatePath("/dashboard/product");
-  } catch (error) {
-    console.error(`Error deleting product with id ${id}:`, error);
-    throw new Error(`Failed to delete product with id ${id}`);
-  }
+    revalidatePath(PRODUCTS_PATH);
+  });
 }

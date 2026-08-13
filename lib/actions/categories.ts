@@ -8,7 +8,7 @@ import { z } from "zod";
 import { withErrorHandling } from "@/lib/helper";
 import { categorySchema } from "@/lib/validations/category";
 
-const CATEGORY_PATH = "/dashboard/category";
+const CATEGORY_PATH = "/dashboard/categories";
 
 type CreateCategoryInput = z.infer<typeof categorySchema>;
 type UpdateCategoryInput = z.infer<typeof categorySchema>;
