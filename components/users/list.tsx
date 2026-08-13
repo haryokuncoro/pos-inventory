@@ -26,6 +26,7 @@ export default function UserList({ users, onEdit, onDelete }: UserListProps) {
                     <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
                         <TableHead>Verified</TableHead>
                         <TableHead className="w-32 text-right">Actions</TableHead>
                     </TableRow>
@@ -37,6 +38,7 @@ export default function UserList({ users, onEdit, onDelete }: UserListProps) {
                             <TableRow key={user.id}>
                                 <TableCell className="font-medium">{user.name}</TableCell>
                                 <TableCell>{user.email}</TableCell>
+                                <TableCell>{user.role}</TableCell>
                                 <TableCell>{user.emailVerified ? "Yes" : "No"}</TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">

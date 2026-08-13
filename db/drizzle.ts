@@ -4,6 +4,7 @@ import { neon } from "@neondatabase/serverless";
 import { Pool } from "pg";
 import { config } from "dotenv";
 import * as schema from "@/db/schema";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 config({ path: ".env" });
 
@@ -15,10 +16,10 @@ if (!databaseUrl) {
 
 const db =
   process.env.NODE_ENV === "production"
-    ? neonDrizzle({
+    ? (neonDrizzle({
         client: neon(databaseUrl),
         schema,
-      })
+      }) as unknown as NodePgDatabase<typeof schema>)
     : pgDrizzle(
         new Pool({
           connectionString: databaseUrl,

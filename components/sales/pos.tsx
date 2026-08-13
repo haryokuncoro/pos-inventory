@@ -132,6 +132,8 @@ export function PosPage({
 
     const [isSubmitting, setIsSubmitting] =
         React.useState(false);
+    const [transactionId, setTransactionId] = React.useState<string>("");
+
 
     // CATEGORIES
 
@@ -343,11 +345,9 @@ export function PosPage({
         setIsSubmitting(true);
 
         try {
-            const session =
-                await authClient.getSession();
+            const session = await authClient.getSession();
 
-            const cashierId =
-                session.data?.user?.id;
+            const cashierId = session.data?.user?.id;
 
             const result = await createSale({
                 cashierId,
@@ -357,7 +357,10 @@ export function PosPage({
                 })),
                 payment: {
                     method: paymentMethod,
-                    amount: total,
+                    amount:
+                        paymentMethod === "CASH"
+                            ? cashReceived
+                            : total,
                 },
             });
 
@@ -369,6 +372,7 @@ export function PosPage({
             toast.success(
                 `Transaksi berhasil: ${result.invoiceNumber}`,
             );
+            setTransactionId(result.saleId);
 
             clearCart();
         } catch (error) {
@@ -380,6 +384,22 @@ export function PosPage({
         } finally {
             setIsSubmitting(false);
         }
+    }
+
+    function handlePrintReceipt(transactionId: string) {
+        if (!transactionId) {
+            toast.error(
+                "Tidak ada transaksi untuk dicetak.",
+            );
+            return;
+        }
+
+        const receiptUrl = `/sales/receipt/${transactionId}`;
+        window.open(receiptUrl, "_blank");
+    }
+
+    function handleNewTransaction() {
+        setTransactionId("");
     }
 
     // TOTALS
@@ -423,6 +443,7 @@ export function PosPage({
         cashReceived,
         changeAmount,
         isSubmitting,
+        transactionId,
 
         onPaymentMethodChange:
             setPaymentMethod,
@@ -442,6 +463,8 @@ export function PosPage({
         onClearCart: clearCart,
 
         onCheckout: handleCheckout,
+        onPrintReceipt: handlePrintReceipt,
+        onNewTransaction: handleNewTransaction,
     };
 
     // RETURN

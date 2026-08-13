@@ -1,17 +1,18 @@
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, ShoppingCart } from "lucide-react";
+import {
+    Banknote,
+    CreditCard,
+    Minus,
+    Plus,
+    QrCode,
+    ShoppingCart,
+    Trash2,
+    WalletCards,
+} from "lucide-react";
 import { formatRupiah } from "@/lib/helper";
 import { CartItem, PaymentMethod, PaymentButton } from "./pos";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import {
-    Banknote,
-    CreditCard,
-    QrCode,
-    Trash2,
-    WalletCards,
-} from "lucide-react";
-
 
 export type CartContentProps = {
     cart: CartItem[];
@@ -28,6 +29,8 @@ export type CartContentProps = {
 
     isSubmitting: boolean;
 
+    transactionId?: string | null;
+
     onPaymentMethodChange: (
         method: PaymentMethod,
     ) => void;
@@ -40,9 +43,13 @@ export type CartContentProps = {
     onDecreaseQuantity: (id: string) => void;
     onRemoveFromCart: (id: string) => void;
     onClearCart: () => void;
-    onCheckout: () => void;
-};
 
+    onCheckout: () => void;
+
+    onPrintReceipt: (transactionId: string) => void;
+
+    onNewTransaction: () => void;
+};
 
 export function CartContent({
     cart,
@@ -55,6 +62,7 @@ export function CartContent({
     cashReceived,
     changeAmount,
     isSubmitting,
+    transactionId,
     onPaymentMethodChange,
     onCashReceivedChange,
     onIncreaseQuantity,
@@ -62,7 +70,11 @@ export function CartContent({
     onRemoveFromCart,
     onClearCart,
     onCheckout,
+    onPrintReceipt,
+    onNewTransaction,
 }: CartContentProps) {
+    const paymentSuccess = Boolean(transactionId);
+
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             {/* Cart items */}
@@ -212,137 +224,176 @@ export function CartContent({
                 </div>
 
                 {/* Payment method */}
-                <div className="space-y-2">
-                    <p className="text-sm font-medium">
-                        Pembayaran
-                    </p>
+                {!paymentSuccess && (
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">
+                            Pembayaran
+                        </p>
 
-                    <div className="grid grid-cols-2 gap-2">
-                        <PaymentButton
-                            active={
-                                paymentMethod === "CASH"
-                            }
-                            icon={<Banknote />}
-                            label="Tunai"
-                            onClick={() =>
-                                onPaymentMethodChange(
-                                    "CASH",
-                                )
-                            }
-                        />
+                        <div className="grid grid-cols-2 gap-2">
+                            <PaymentButton
+                                active={
+                                    paymentMethod === "CASH"
+                                }
+                                icon={<Banknote />}
+                                label="Tunai"
+                                onClick={() =>
+                                    onPaymentMethodChange(
+                                        "CASH",
+                                    )
+                                }
+                            />
 
-                        <PaymentButton
-                            active={
-                                paymentMethod === "QRIS"
-                            }
-                            icon={<QrCode />}
-                            label="QRIS"
-                            onClick={() =>
-                                onPaymentMethodChange(
-                                    "QRIS",
-                                )
-                            }
-                        />
+                            <PaymentButton
+                                active={
+                                    paymentMethod === "QRIS"
+                                }
+                                icon={<QrCode />}
+                                label="QRIS"
+                                onClick={() =>
+                                    onPaymentMethodChange(
+                                        "QRIS",
+                                    )
+                                }
+                            />
 
-                        <PaymentButton
-                            active={
-                                paymentMethod === "CARD"
-                            }
-                            icon={<CreditCard />}
-                            label="Kartu"
-                            onClick={() =>
-                                onPaymentMethodChange(
-                                    "CARD",
-                                )
-                            }
-                        />
+                            <PaymentButton
+                                active={
+                                    paymentMethod === "CARD"
+                                }
+                                icon={<CreditCard />}
+                                label="Kartu"
+                                onClick={() =>
+                                    onPaymentMethodChange(
+                                        "CARD",
+                                    )
+                                }
+                            />
 
-                        <PaymentButton
-                            active={
-                                paymentMethod ===
-                                "TRANSFER"
-                            }
-                            icon={<WalletCards />}
-                            label="Transfer"
-                            onClick={() =>
-                                onPaymentMethodChange(
-                                    "TRANSFER",
-                                )
-                            }
-                        />
-                    </div>
-
-                    {paymentMethod === "CASH" && (
-                        <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
-                            <div className="space-y-2">
-                                <label
-                                    htmlFor="cash-received"
-                                    className="text-sm font-medium"
-                                >
-                                    Uang pelanggan
-                                </label>
-
-                                <Input
-                                    id="cash-received"
-                                    type="number"
-                                    min={
-                                        total > 0
-                                            ? total
-                                            : 0
-                                    }
-                                    step="1000"
-                                    inputMode="numeric"
-                                    placeholder="Masukkan nominal bayar"
-                                    value={
-                                        cashReceivedInput
-                                    }
-                                    onChange={(event) =>
-                                        onCashReceivedChange(
-                                            event.target
-                                                .value,
-                                        )
-                                    }
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">
-                                    Kembalian
-                                </span>
-
-                                <span className="font-medium">
-                                    {formatRupiah(
-                                        changeAmount,
-                                    )}
-                                </span>
-                            </div>
+                            <PaymentButton
+                                active={
+                                    paymentMethod ===
+                                    "TRANSFER"
+                                }
+                                icon={<WalletCards />}
+                                label="Transfer"
+                                onClick={() =>
+                                    onPaymentMethodChange(
+                                        "TRANSFER",
+                                    )
+                                }
+                            />
                         </div>
-                    )}
-                </div>
 
-                <Button
-                    className="h-12 w-full text-base"
-                    disabled={
-                        cart.length === 0 ||
-                        isSubmitting ||
-                        (paymentMethod === "CASH" &&
-                            cashReceived < total)
-                    }
-                    onClick={onCheckout}
-                >
-                    {isSubmitting
-                        ? "Memproses..."
-                        : `Bayar ${formatRupiah(total)}`}
-                </Button>
+                        {paymentMethod === "CASH" && (
+                            <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                                <div className="space-y-2">
+                                    <label
+                                        htmlFor="cash-received"
+                                        className="text-sm font-medium"
+                                    >
+                                        Uang pelanggan
+                                    </label>
 
-                {cart.length > 0 && (
-                    <Button
-                        variant="ghost"
-                        className="w-full text-muted-foreground"
-                        onClick={onClearCart}
-                    >
-                        Kosongkan keranjang
-                    </Button>
+                                    <Input
+                                        id="cash-received"
+                                        type="number"
+                                        min={
+                                            total > 0
+                                                ? total
+                                                : 0
+                                        }
+                                        step="1000"
+                                        inputMode="numeric"
+                                        placeholder="Masukkan nominal bayar"
+                                        value={
+                                            cashReceivedInput
+                                        }
+                                        onChange={(event) =>
+                                            onCashReceivedChange(
+                                                event.target
+                                                    .value,
+                                            )
+                                        }
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">
+                                        Kembalian
+                                    </span>
+
+                                    <span className="font-medium">
+                                        {formatRupiah(
+                                            changeAmount,
+                                        )}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Payment button */}
+                {!paymentSuccess && (
+                    <>
+                        <Button
+                            className="h-12 w-full text-base"
+                            disabled={
+                                cart.length === 0 ||
+                                isSubmitting ||
+                                (paymentMethod === "CASH" &&
+                                    cashReceived < total)
+                            }
+                            onClick={onCheckout}
+                        >
+                            {isSubmitting
+                                ? "Memproses..."
+                                : `Bayar ${formatRupiah(total)}`}
+                        </Button>
+
+                        {cart.length > 0 && (
+                            <Button
+                                variant="ghost"
+                                className="w-full text-muted-foreground"
+                                onClick={onClearCart}
+                            >
+                                Kosongkan keranjang
+                            </Button>
+                        )}
+                    </>
+                )}
+
+                {/* Payment success */}
+                {paymentSuccess && transactionId && (
+                    <div className="space-y-3">
+                        <div className="rounded-lg border bg-muted/30 p-4 text-center">
+                            <p className="font-semibold">
+                                Pembayaran berhasil
+                            </p>
+
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Transaksi #{transactionId}
+                            </p>
+                        </div>
+
+                        <Button
+                            className="h-12 w-full"
+                            onClick={() =>
+                                onPrintReceipt(transactionId)
+                            }
+                        >
+                            Cetak Struk
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            className="h-12 w-full"
+                            onClick={onNewTransaction}
+                        >
+                            Transaksi Baru
+                        </Button>
+                    </div>
                 )}
             </div>
         </div>
