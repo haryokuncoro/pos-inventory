@@ -348,9 +348,10 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string) {
-  withErrorHandling(`deleting product with id ${id}`, async () => {
-    await db.delete(product).where(eq(product.id, id));
-
+  await withErrorHandling(`deleting product with id ${id}`, async () => {
+    const result = await db.delete(product).where(eq(product.id, id));
     revalidatePath(PRODUCTS_PATH);
+    return result;
   });
+
 }
