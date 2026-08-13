@@ -15,6 +15,13 @@
       "when": 1786587888409,
       "tag": "0001_create-store-and-store-settings",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786600872033,
+      "tag": "0002_add-discount-type",
+      "breakpoints": true
     }
   ]
 }

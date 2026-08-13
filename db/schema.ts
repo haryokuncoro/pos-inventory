@@ -357,7 +357,14 @@ export const sale = pgTable(
       precision: 15,
       scale: 2,
     }).notNull(),
-
+    discountType: text("discount_type"),
+    discountValue: numeric(
+      "discount_value",
+      {
+        precision: 15,
+        scale: 2,
+      },
+    ),
     discountAmount: numeric(
       "discount_amount",
       {
