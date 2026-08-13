@@ -1,21 +1,22 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { db } from "@/db/drizzle";
-import {
-  sale,
-  saleItem,
-  payment,
-  inventoryTransaction,
-  product,
-  productVariant,
-  category,
-  user,
-} from "@/db/schema";
-import { and, desc, eq, gte, ilike, inArray, or, sql } from "drizzle-orm";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { and, desc, eq, gte, ilike, inArray, or, sql } from "drizzle-orm";
+import { generateInvoiceNumber } from "@/lib/helper";
 import { auth } from "@/lib/auth";
 import { money, roundMoney } from "@/lib/helper";
+import { db } from "@/db/drizzle";
+import {
+  category,
+  inventoryTransaction,
+  payment,
+  product,
+  productVariant,
+  sale,
+  saleItem,
+  user,
+} from "@/db/schema";
 
 // TYPES
 export type CreateSaleItemInput = {
@@ -25,18 +26,12 @@ export type CreateSaleItemInput = {
 
 export type CreateSaleInput = {
   cashierId?: string;
-
   items: CreateSaleItemInput[];
-
   discountType?: "FIXED" | "PERCENTAGE";
-
   discountValue?: number;
-
   taxValue?: number;
-
   payment: {
     method: "CASH" | "QRIS" | "CARD" | "TRANSFER";
-
     amount: number;
   };
 };
@@ -76,31 +71,118 @@ export type PaginatedSaleProductsResult = {
   totalPages: number;
 };
 
-function generateInvoiceNumber() {
-  const now = new Date();
 
-  const date = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-  ].join("");
-
-  const random = crypto
-    .randomUUID()
-    .replace(/-/g, "")
-    .slice(0, 8)
-    .toUpperCase();
-
-  return `INV-${date}-${random}`;
+function errorResult(message: string): CreateSaleResult {
+  return {
+    success: false,
+    message,
+  };
 }
 
+function validateSaleInput(input: CreateSaleInput): string | null {
+  if (!input.items?.length) {
+    return "Keranjang masih kosong.";
+  }
 
-// Pagination is based on variants, so page size matches rendered product cards.
+  for (const item of input.items) {
+    if (!item.variantId) {
+      return "Produk tidak valid.";
+    }
+
+    if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+      return "Quantity harus lebih dari 0.";
+    }
+  }
+
+  if (
+    input.discountType &&
+    !["FIXED", "PERCENTAGE"].includes(input.discountType)
+  ) {
+    return "Tipe diskon tidak valid.";
+  }
+
+  const discountValue = roundMoney(input.discountValue ?? 0);
+
+  if (
+    input.discountType &&
+    (!Number.isFinite(discountValue) || discountValue < 0)
+  ) {
+    return "Diskon tidak valid.";
+  }
+
+  if (input.discountType === "PERCENTAGE" && discountValue > 100) {
+    return "Diskon persen tidak boleh lebih dari 100.";
+  }
+
+  const taxValue = roundMoney(input.taxValue ?? 0);
+
+  if (!Number.isFinite(taxValue) || taxValue < 0) {
+    return "Pajak tidak valid.";
+  }
+
+  if (taxValue > 100) {
+    return "Pajak persen tidak boleh lebih dari 100.";
+  }
+
+  if (
+    !input.payment ||
+    !Number.isFinite(input.payment.amount) ||
+    input.payment.amount <= 0
+  ) {
+    return "Jumlah pembayaran tidak valid.";
+  }
+
+  return null;
+}
+
+function aggregateQuantities(
+  items: CreateSaleItemInput[],
+): Map<string, number> {
+  const quantityMap = new Map<string, number>();
+
+  for (const item of items) {
+    quantityMap.set(
+      item.variantId,
+      (quantityMap.get(item.variantId) ?? 0) + item.quantity,
+    );
+  }
+
+  return quantityMap;
+}
+
+function calculateDiscount(
+  subtotal: number,
+  discountType: CreateSaleInput["discountType"],
+  discountValue: number,
+): number {
+  const rawDiscount =
+    discountType === "PERCENTAGE"
+      ? (subtotal * discountValue) / 100
+      : discountType === "FIXED"
+        ? discountValue
+        : 0;
+
+  return roundMoney(Math.min(Math.max(rawDiscount, 0), subtotal));
+}
+
+function calculateTax(
+  taxableAmount: number,
+  taxRate: number,
+): number {
+  return roundMoney((taxableAmount * taxRate) / 100);
+}
+
+// SALE PRODUCTS
+
 export async function getSaleProductsPaginated(
   input: GetSaleProductsPaginatedInput = {},
 ): Promise<PaginatedSaleProductsResult> {
   try {
-    const pageSize = Math.min(Math.max(input.pageSize ?? 24, 1), 100);
+    const pageSize = Math.min(
+      Math.max(input.pageSize ?? 24, 1),
+      100,
+    );
+
     const requestedPage = Math.max(input.page ?? 1, 1);
     const normalizedQuery = input.query?.trim() ?? "";
     const keyword = `%${normalizedQuery}%`;
@@ -119,8 +201,14 @@ export async function getSaleProductsPaginated(
         id: productVariant.id,
       })
       .from(productVariant)
-      .innerJoin(product, eq(productVariant.productId, product.id))
-      .leftJoin(category, eq(product.categoryId, category.id))
+      .innerJoin(
+        product,
+        eq(productVariant.productId, product.id),
+      )
+      .leftJoin(
+        category,
+        eq(product.categoryId, category.id),
+      )
       .where(
         and(
           eq(product.isActive, true),
@@ -136,8 +224,17 @@ export async function getSaleProductsPaginated(
       .from(baseQuery.as("sale_catalog_count"));
 
     const totalItems = Number(count ?? 0);
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-    const page = Math.min(requestedPage, totalPages);
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(totalItems / pageSize),
+    );
+
+    const page = Math.min(
+      requestedPage,
+      totalPages,
+    );
+
     const offset = (page - 1) * pageSize;
 
     const rows = await db
@@ -151,8 +248,14 @@ export async function getSaleProductsPaginated(
         stockQuantity: productVariant.stockQuantity,
       })
       .from(productVariant)
-      .innerJoin(product, eq(productVariant.productId, product.id))
-      .leftJoin(category, eq(product.categoryId, category.id))
+      .innerJoin(
+        product,
+        eq(productVariant.productId, product.id),
+      )
+      .leftJoin(
+        category,
+        eq(product.categoryId, category.id),
+      )
       .where(
         and(
           eq(product.isActive, true),
@@ -182,39 +285,23 @@ export async function getSaleProductsPaginated(
       totalPages,
     };
   } catch (error) {
-    console.error("Error fetching paginated sale products:", error);
-    throw new Error("Failed to fetch paginated sale products");
+    console.error(
+      "Error fetching paginated sale products:",
+      error,
+    );
+
+    throw new Error(
+      "Failed to fetch paginated sale products",
+    );
   }
 }
 
-/**
- * =========================================================
- * CREATE SALE
- * =========================================================
- *
- * Client sends only:
- *
- * - variantId
- * - quantity
- *
- * Price is always taken from the database.
- *
- * Everything below happens in ONE DB transaction:
- *
- * 1. Create sale
- * 2. Create sale items
- * 3. Decrease stock
- * 4. Create inventory transaction
- * 5. Create payment
- *
- * If any step fails, everything rolls back.
- * =========================================================
- */
-
+// CREATE SALE
 export async function createSale(
   input: CreateSaleInput,
 ): Promise<CreateSaleResult> {
   try {
+    // AUTH
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -222,96 +309,31 @@ export async function createSale(
     const cashierId = input.cashierId ?? session?.user?.id;
 
     if (!cashierId) {
-      return {
-        success: false,
-        message: "Cashier tidak valid. Silakan login kembali.",
-      };
+      return errorResult(
+        "Cashier tidak valid. Silakan login kembali.",
+      );
     }
 
-    // BASIC VALIDATION
+    // INPUT VALIDATION
+    const validationError = validateSaleInput(input);
 
-    if (!input.items || input.items.length === 0) {
-      return {
-        success: false,
-        message: "Keranjang masih kosong.",
-      };
+    if (validationError) {
+      return errorResult(validationError);
     }
 
-    for (const item of input.items) {
-      if (!item.variantId) {
-        return {
-          success: false,
-          message: "Produk tidak valid.",
-        };
-      }
+    const discountValue = roundMoney(
+      input.discountValue ?? 0,
+    );
 
-      if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
-        return {
-          success: false,
-          message: "Quantity harus lebih dari 0.",
-        };
-      }
-    }
+    const taxValue = roundMoney(
+      input.taxValue ?? 0,
+    );
 
-    if (
-      input.discountType &&
-      input.discountType !== "FIXED" &&
-      input.discountType !== "PERCENTAGE"
-    ) {
-      return {
-        success: false,
-        message: "Tipe diskon tidak valid.",
-      };
-    }
-
-    const discountValue = roundMoney(input.discountValue ?? 0);
-
-    if (
-      input.discountType &&
-      (!Number.isFinite(discountValue) || discountValue < 0)
-    ) {
-      return {
-        success: false,
-        message: "Diskon tidak valid.",
-      };
-    }
-
-    if (input.discountType === "PERCENTAGE" && discountValue > 100) {
-      return {
-        success: false,
-        message: "Diskon persen tidak boleh lebih dari 100.",
-      };
-    }
-
-    const taxValue = roundMoney(input.taxValue ?? 0);
-
-    if (!Number.isFinite(taxValue) || taxValue < 0) {
-      return {
-        success: false,
-        message: "Pajak tidak valid.",
-      };
-    }
-
-    if (taxValue > 100) {
-      return {
-        success: false,
-        message: "Pajak persen tidak boleh lebih dari 100.",
-      };
-    }
-
-    if (
-      !input.payment ||
-      !Number.isFinite(input.payment.amount) ||
-      input.payment.amount <= 0
-    ) {
-      return {
-        success: false,
-        message: "Jumlah pembayaran tidak valid.",
-      };
-    }
+    const paymentAmount = roundMoney(
+      input.payment.amount,
+    );
 
     // VERIFY CASHIER
-
     const [cashier] = await db
       .select({
         id: user.id,
@@ -321,203 +343,280 @@ export async function createSale(
       .limit(1);
 
     if (!cashier) {
-      return {
-        success: false,
-        message: "Cashier tidak ditemukan.",
-      };
-    }
-
-    // TRANSACTION
-    const quantityMap = new Map<string, number>();
-
-    for (const item of input.items) {
-      quantityMap.set(
-        item.variantId,
-        (quantityMap.get(item.variantId) ?? 0) + item.quantity,
+      return errorResult(
+        "Cashier tidak ditemukan.",
       );
     }
 
-    const variantIds = Array.from(quantityMap.keys());
-
-    const variants = await db
-      .select({
-        id: productVariant.id,
-        sku: productVariant.sku,
-        name: productVariant.name,
-        sellingPrice: productVariant.sellingPrice,
-        stockQuantity: productVariant.stockQuantity,
-        isActive: productVariant.isActive,
-      })
-      .from(productVariant)
-      .where(inArray(productVariant.id, variantIds));
-
-    if (variants.length !== variantIds.length) {
-      throw new Error("Salah satu produk tidak ditemukan.");
-    }
-
-    const variantMap = new Map(
-      variants.map((variant) => [variant.id, variant]),
+    // AGGREGATE ITEMS
+    const quantityMap = aggregateQuantities(
+      input.items,
     );
 
-    const items = variantIds.map((variantId) => {
-      const variant = variantMap.get(variantId);
-
-      if (!variant) {
-        throw new Error("Produk tidak ditemukan.");
-      }
-
-      if (!variant.isActive) {
-        throw new Error(`Produk ${variant.name} tidak aktif.`);
-      }
-
-      const quantity = quantityMap.get(variantId) ?? 0;
-      const unitPrice = Number(variant.sellingPrice);
-
-      if (!Number.isFinite(unitPrice)) {
-        throw new Error(`Harga ${variant.name} tidak valid.`);
-      }
-
-      const subtotal = roundMoney(unitPrice * quantity);
-
-      return {
-        variantId,
-        quantity,
-        unitPrice,
-        discountAmount: 0,
-        subtotal,
-      };
-    });
-
-    const subtotal = roundMoney(
-      items.reduce((sum, item) => sum + item.subtotal, 0),
+    const variantIds = Array.from(
+      quantityMap.keys(),
     );
 
-    // Discount amount is always recomputed server-side from type + value.
-    const rawDiscountAmount =
-      input.discountType === "PERCENTAGE"
-        ? (subtotal * discountValue) / 100
-        : input.discountType === "FIXED"
-          ? discountValue
-          : 0;
+    // DATABASE TRANSACTION
+    const result = await db.transaction(async (tx) => {
+      // LOAD VARIANTS
 
-    const discountAmount = roundMoney(
-      Math.min(Math.max(rawDiscountAmount, 0), subtotal),
-    );
-
-    // Tax is always a percentage applied to the amount after discount.
-    const taxableAmount = Math.max(subtotal - discountAmount, 0);
-
-    const taxAmount = roundMoney((taxableAmount * taxValue) / 100);
-
-    const totalAmount = roundMoney(subtotal - discountAmount + taxAmount);
-
-    if (totalAmount < 0) {
-      throw new Error("Total transaksi tidak valid.");
-    }
-
-    const paymentAmount = roundMoney(input.payment.amount);
-
-    if (paymentAmount < totalAmount) {
-      throw new Error("Jumlah pembayaran kurang.");
-    }
-
-    const invoiceNumber = generateInvoiceNumber();
-
-    const [createdSale] = await db
-      .insert(sale)
-      .values({
-        invoiceNumber,
-        cashierId,
-        subtotal: money(subtotal),
-        discountType: input.discountType ?? null,
-        discountValue: input.discountType ? money(discountValue) : null,
-        discountAmount: money(discountAmount),
-        taxValue: money(taxValue),
-        taxAmount: money(taxAmount),
-        totalAmount: money(totalAmount),
-        status: "COMPLETED",
-      })
-      .returning({
-        id: sale.id,
-        invoiceNumber: sale.invoiceNumber,
-      });
-
-    if (!createdSale) {
-      throw new Error("Gagal membuat transaksi.");
-    }
-
-    await db.insert(saleItem).values(
-      items.map((item) => ({
-        saleId: createdSale.id,
-        variantId: item.variantId,
-        quantity: item.quantity,
-        unitPrice: money(item.unitPrice),
-        discountAmount: money(item.discountAmount),
-        subtotal: money(item.subtotal),
-      })),
-    );
-
-    for (const item of items) {
-      const currentVariant = await db
+      const variants = await tx
         .select({
           id: productVariant.id,
-          stockQuantity: productVariant.stockQuantity,
           name: productVariant.name,
+          sellingPrice: productVariant.sellingPrice,
+          stockQuantity: productVariant.stockQuantity,
+          isActive: productVariant.isActive,
         })
         .from(productVariant)
-        .where(eq(productVariant.id, item.variantId))
-        .limit(1);
+        .where(
+          inArray(
+            productVariant.id,
+            variantIds,
+          ),
+        );
 
-      const variant = currentVariant[0];
-
-      if (!variant) {
-        throw new Error("Produk tidak ditemukan.");
+      if (variants.length !== variantIds.length) {
+        throw new Error(
+          "Salah satu produk tidak ditemukan.",
+        );
       }
 
-      if (variant.stockQuantity < item.quantity) {
-        throw new Error(`Stok ${variant.name} tidak mencukupi.`);
-      }
+      const variantMap = new Map(
+        variants.map((variant) => [
+          variant.id,
+          variant,
+        ]),
+      );
 
-      await db
-        .update(productVariant)
-        .set({
-          stockQuantity: variant.stockQuantity - item.quantity,
-          updatedAt: new Date(),
-        })
-        .where(eq(productVariant.id, item.variantId));
+      // BUILD SALE ITEMS
+      const items = variantIds.map((variantId) => {
+        const variant = variantMap.get(
+          variantId,
+        );
 
-      await db.insert(inventoryTransaction).values({
-        variantId: item.variantId,
-        type: "SALE",
-        quantity: -item.quantity,
-        referenceType: "SALE",
-        referenceId: createdSale.id,
-        createdBy: cashierId,
+        if (!variant) {
+          throw new Error(
+            "Produk tidak ditemukan.",
+          );
+        }
+
+        if (!variant.isActive) {
+          throw new Error(
+            `Produk ${variant.name} tidak aktif.`,
+          );
+        }
+
+        const quantity =
+          quantityMap.get(variantId) ?? 0;
+
+        const unitPrice = Number(
+          variant.sellingPrice,
+        );
+
+        if (!Number.isFinite(unitPrice)) {
+          throw new Error(
+            `Harga ${variant.name} tidak valid.`,
+          );
+        }
+
+        if (
+          variant.stockQuantity < quantity
+        ) {
+          throw new Error(
+            `Stok ${variant.name} tidak mencukupi.`,
+          );
+        }
+
+        const subtotal = roundMoney(
+          unitPrice * quantity,
+        );
+
+        return {
+          variantId,
+          quantity,
+          unitPrice,
+          discountAmount: 0,
+          subtotal,
+        };
       });
-    }
 
-    await db.insert(payment).values({
-      saleId: createdSale.id,
-      method: input.payment.method,
-      amount: money(paymentAmount),
+      // CALCULATE TOTAL
+      const subtotal = roundMoney(
+        items.reduce(
+          (sum, item) => sum + item.subtotal,
+          0,
+        ),
+      );
+
+      const discountAmount =
+        calculateDiscount(
+          subtotal,
+          input.discountType,
+          discountValue,
+        );
+
+      const taxableAmount = Math.max(
+        subtotal - discountAmount,
+        0,
+      );
+
+      const taxAmount = calculateTax(
+        taxableAmount,
+        taxValue,
+      );
+
+      const totalAmount = roundMoney(
+        taxableAmount + taxAmount,
+      );
+
+      if (totalAmount < 0) {
+        throw new Error(
+          "Total transaksi tidak valid.",
+        );
+      }
+
+      if (paymentAmount < totalAmount) {
+        throw new Error(
+          "Jumlah pembayaran kurang.",
+        );
+      }
+
+      // CREATE SALE
+      const invoiceNumber =
+        generateInvoiceNumber();
+
+      const [createdSale] = await tx
+        .insert(sale)
+        .values({
+          invoiceNumber,
+          cashierId,
+
+          subtotal: money(subtotal),
+
+          discountType:
+            input.discountType ?? null,
+
+          discountValue:
+            input.discountType
+              ? money(discountValue)
+              : null,
+
+          discountAmount:
+            money(discountAmount),
+
+          taxValue: money(taxValue),
+
+          taxAmount: money(taxAmount),
+
+          totalAmount: money(totalAmount),
+
+          status: "COMPLETED",
+        })
+        .returning({
+          id: sale.id,
+          invoiceNumber: sale.invoiceNumber,
+        });
+
+      if (!createdSale) {
+        throw new Error(
+          "Gagal membuat transaksi.",
+        );
+      }
+
+      // CREATE SALE ITEMS
+      await tx.insert(saleItem).values(
+        items.map((item) => ({
+          saleId: createdSale.id,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          unitPrice: money(item.unitPrice),
+          discountAmount: money(
+            item.discountAmount,
+          ),
+          subtotal: money(item.subtotal),
+        })),
+      );
+
+      // UPDATE STOCK + INVENTORY TRANSACTION
+      for (const item of items) {
+        const updatedRows = await tx
+          .update(productVariant)
+          .set({
+            stockQuantity: sql`${productVariant.stockQuantity} - ${item.quantity}`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(
+                productVariant.id,
+                item.variantId,
+              ),
+              gte(
+                productVariant.stockQuantity,
+                item.quantity,
+              ),
+            ),
+          )
+          .returning({
+            id: productVariant.id,
+          });
+
+        if (updatedRows.length === 0) {
+          const variant = variantMap.get(
+            item.variantId,
+          );
+
+          throw new Error(
+            `Stok ${variant?.name ?? "produk"} tidak mencukupi.`,
+          );
+        }
+
+        await tx.insert(
+          inventoryTransaction,
+        ).values({
+          variantId: item.variantId,
+          type: "SALE",
+          quantity: -item.quantity,
+          referenceType: "SALE",
+          referenceId: createdSale.id,
+          createdBy: cashierId,
+        });
+      }
+
+      // CREATE PAYMENT
+      await tx.insert(payment).values({
+        saleId: createdSale.id,
+        method: input.payment.method,
+        amount: money(paymentAmount),
+      });
+
+      return createdSale;
     });
 
+    // CACHE REVALIDATION
     revalidatePath("/sale");
     revalidatePath("/sales");
     revalidatePath("/dashboard/products");
 
     return {
       success: true,
-      saleId: createdSale.id,
-      invoiceNumber: createdSale.invoiceNumber,
+      saleId: result.id,
+      invoiceNumber: result.invoiceNumber,
     };
   } catch (error) {
-    console.error("Error creating sale:", error);
+    console.error(
+      "Error creating sale:",
+      error,
+    );
 
     return {
       success: false,
       message:
-        error instanceof Error ? error.message : "Gagal membuat transaksi.",
+        error instanceof Error
+          ? error.message
+          : "Gagal membuat transaksi.",
     };
   }
 }

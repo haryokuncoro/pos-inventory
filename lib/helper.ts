@@ -63,3 +63,21 @@ export function roundMoney(value: number) {
 export function money(value: number) {
   return roundMoney(value).toFixed(2);
 }
+
+export function generateInvoiceNumber(): string {
+  const now = new Date();
+
+  const date = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("");
+
+  const random = crypto
+    .randomUUID()
+    .replace(/-/g, "")
+    .slice(0, 8)
+    .toUpperCase();
+
+  return `INV-${date}-${random}`;
+}
