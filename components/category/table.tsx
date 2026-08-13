@@ -1,10 +1,10 @@
 "use client"
+
 import GeneralPagination from "@/components/dashboard/pagination"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import type { SelectCategory } from "@/db/schema"
 import {
@@ -12,21 +12,14 @@ import {
   deleteCategory,
   updateCategory,
 } from "@/lib/actions/categories"
+import {
+  createCategorySchema,
+  type CreateCategoryInput,
+} from "@/lib/validations/category"
 
 import CategoryDialogForm from "./dialog-form"
 import CategoryList from "./list"
 import CategoryToolbar from "./toolbar"
-
-const categorySchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Category name is required."),
-})
-
-export type CategoryFormValues = z.infer<
-  typeof categorySchema
->
 
 type CategoryTableProps = {
   initialCategories: SelectCategory[]
@@ -47,8 +40,8 @@ export default function CategoryTable({
 
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const form = useForm<CategoryFormValues>({
-    resolver: zodResolver(categorySchema),
+  const form = useForm<CreateCategoryInput>({
+    resolver: zodResolver(createCategorySchema),
     defaultValues: {
       name: "",
     },
@@ -120,54 +113,47 @@ export default function CategoryTable({
   }
 
   const handleSubmit = async (
-    values: CategoryFormValues
+    values: CreateCategoryInput
   ) => {
-    try {
-      if (selectedCategory) {
-        const updatedCategory = await updateCategory(
-          selectedCategory.id,
-          {
-            name: values.name,
-          }
-        )
+    if (selectedCategory) {
+      const result = await updateCategory(
+        selectedCategory.id,
+        values
+      )
 
-        setCategories((current) =>
-          current.map((category) =>
-            category.id === selectedCategory.id
-              ? {
-                  ...category,
-                  name:
-                    updatedCategory?.name ??
-                    values.name,
-                }
-              : category
-          )
-        )
-
-        toast.success("Category updated")
-      } else {
-        const createdCategory = await createCategory({
-          name: values.name,
-        })
-
-        if (createdCategory) {
-          setCategories((current) => [
-            createdCategory,
-            ...current,
-          ])
-        }
-
-        toast.success("Category created")
+      if (!result.success) {
+        toast.error(result.error)
+        return
       }
 
-      closeModal()
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to save category."
+      setCategories((current) =>
+        current.map((category) =>
+          category.id === selectedCategory.id
+            ? result.data
+            : category
+        )
       )
+
+      toast.success("Category updated")
+      closeModal()
+
+      return
     }
+
+    const result = await createCategory(values)
+
+    if (!result.success) {
+      toast.error(result.error)
+      return
+    }
+
+    setCategories((current) => [
+      result.data,
+      ...current,
+    ])
+
+    toast.success("Category created")
+    closeModal()
   }
 
   const handleDelete = async (categoryId: string) => {
@@ -179,23 +165,20 @@ export default function CategoryTable({
       return
     }
 
-    try {
-      await deleteCategory(categoryId)
+    const result = await deleteCategory(categoryId)
 
-      setCategories((current) =>
-        current.filter(
-          (category) => category.id !== categoryId
-        )
-      )
-
-      toast.success("Category deleted")
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to delete category."
-      )
+    if (!result.success) {
+      toast.error(result.error)
+      return
     }
+
+    setCategories((current) =>
+      current.filter(
+        (category) => category.id !== categoryId
+      )
+    )
+
+    toast.success("Category deleted")
   }
 
   return (

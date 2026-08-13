@@ -24,23 +24,16 @@ import {
 import { Input } from "@/components/ui/input"
 
 import type { SelectCategory } from "@/db/schema"
-
-import type { CategoryFormValues } from "./table"
+import type { CreateCategoryInput } from "@/lib/validations/category"
 
 type CategoryDialogFormProps = {
-  form: UseFormReturn<CategoryFormValues>
-
+  form: UseFormReturn<CreateCategoryInput>
   selectedCategory: SelectCategory | null
-
   open: boolean
   onOpenChange: Dispatch<SetStateAction<boolean>>
-
   onClose: () => void
   onCreate: () => void
-
-  onSubmit: (
-    values: CategoryFormValues
-  ) => Promise<void>
+  onSubmit: (values: CreateCategoryInput) => Promise<void>
 }
 
 export default function CategoryDialogForm({
@@ -53,9 +46,7 @@ export default function CategoryDialogForm({
   onSubmit,
 }: CategoryDialogFormProps) {
   const isEdit = Boolean(selectedCategory)
-
-  const isSubmitting =
-    form.formState.isSubmitting
+  const isSubmitting = form.formState.isSubmitting
 
   return (
     <Dialog
@@ -68,11 +59,14 @@ export default function CategoryDialogForm({
         }
       }}
     >
-     
-        <DialogTrigger  onClick={onCreate} render={<Button variant="outline">
-          Add category
-        </Button>} />
-
+      <DialogTrigger
+        onClick={onCreate}
+        render={
+          <Button variant="outline">
+            Add category
+          </Button>
+        }
+      />
 
       <DialogContent>
         <DialogHeader>
@@ -98,9 +92,7 @@ export default function CategoryDialogForm({
               name="name"
               control={form.control}
               render={({ field, fieldState }) => (
-                <Field
-                  data-invalid={fieldState.invalid}
-                >
+                <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="category-form-name">
                     Name
                   </FieldLabel>
@@ -111,6 +103,7 @@ export default function CategoryDialogForm({
                     placeholder="Enter category name"
                     autoComplete="off"
                     aria-invalid={fieldState.invalid}
+                    disabled={isSubmitting}
                   />
 
                   {fieldState.invalid && (
@@ -125,9 +118,7 @@ export default function CategoryDialogForm({
         </form>
 
         <DialogFooter>
-          <DialogClose
-            disabled={isSubmitting}
-          >
+          <DialogClose disabled={isSubmitting}>
             Cancel
           </DialogClose>
 

@@ -1,3 +1,33 @@
+export type ActionResult<T> =
+  | {
+      success: true;
+      data: T;
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
+export async function handleAction<T>(
+  action: () => Promise<T>,
+  errorMessage: string,
+): Promise<ActionResult<T>> {
+  try {
+    const data = await action();
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error(errorMessage, error);
+
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
 
 export function formatRupiah(value: number) {
     return new Intl.NumberFormat("id-ID", {
