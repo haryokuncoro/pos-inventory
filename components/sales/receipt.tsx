@@ -1,5 +1,5 @@
 import { formatRupiah } from "@/lib/helper";
-
+import type { SelectStore, SelectStoreSettings } from "@/db/schema";
 export type ReceiptTransaction = {
     invoiceNumber: string;
     createdAt: Date;
@@ -21,18 +21,22 @@ export type ReceiptTransaction = {
 
 type ReceiptProps = {
     transaction: ReceiptTransaction;
+    store: SelectStore | null;
+    settings: SelectStoreSettings | null;
 };
 
-export function Receipt({ transaction }: ReceiptProps) {
+export function Receipt({ transaction, store, settings }: ReceiptProps) {
     return (
         <div className="receipt">
             <div className="text-center">
+                {settings?.receiptHeader && <p>{settings.receiptHeader}</p>}
+
                 <h1 className="font-bold text-lg">
-                    TOKO ABC
+                    {!settings?.receiptHeader ? (store?.name ?? "TOKO ABC") : null}
                 </h1>
 
-                <p>Jl. Contoh No. 123</p>
-                <p>Telp. 08123456789</p>
+                <p>{store?.address ?? "Jl. Contoh No. 123"}</p>
+                <p>{store?.phone ?? "Telp. 08123456789"}</p>
             </div>
 
             <div className="divider" />
@@ -150,8 +154,7 @@ export function Receipt({ transaction }: ReceiptProps) {
             <div className="divider" />
 
             <div className="mt-4 text-center">
-                <p>Terima kasih</p>
-                <p>Selamat berbelanja kembali</p>
+                <p>{settings?.receiptFooter ?? "Terima kasih"}</p>
             </div>
         </div>
     );
