@@ -107,7 +107,7 @@ export function CartContent({
             {/* Cart items */}
             <div className="min-h-0 flex-1 overflow-y-auto p-4">
                 {cart.length === 0 ? (
-                    <div className="flex h-64 flex-col items-center justify-center text-center">
+                    <div className="flex h-30 flex-col items-center justify-center text-center">
                         <div className="flex size-14 items-center justify-center rounded-full bg-muted">
                             <ShoppingCart className="size-6 text-muted-foreground" />
                         </div>
