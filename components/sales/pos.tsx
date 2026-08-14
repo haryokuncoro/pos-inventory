@@ -627,7 +627,7 @@ export function PosPage({
 
                 {/* Desktop Cart */}
                 <aside className="hidden w-[380px] shrink-0 xl:flex">
-                    <Card className="sticky top-4 flex h-[calc(100vh-2rem)] max-h-[850px] w-full flex-col">
+                    <Card className="sticky top-4 flex h-full max-h-[1050px] w-full flex-col">
                         <CardHeader className="border-b">
                             <div className="flex items-center justify-between">
                                 <div>
