@@ -1,53 +1,66 @@
 # POS Inventory
 
-A Next.js point-of-sale and inventory management application for managing products, categories, users, sales transactions, and sales reports in a single dashboard.
+A store-scoped point-of-sale and inventory dashboard built with Next.js. It brings catalog management, checkout, stock tracking, sales reporting, receipts, and store administration into one application.
 
-## Features
+## What it includes
 
-- Secure authentication with Better Auth
-  - Email/password sign in
-  - Google OAuth support
-  - Protected dashboard routes via middleware
-- Product management
-  - Create, update, and manage categories
-  - Create products with multiple variants
-  - Track SKU, price, stock quantity, and active status
-- POS / sales workflow
-  - Add products to cart
-  - Select payment method and amount
-  - Automatically calculate totals, discounts, and tax
-  - Reduce stock on successful sales
-  - Record inventory transactions
-- Sales reporting
-  - View transaction history
-  - Inspect daily sales records and invoice data
-- User management
-  - Dashboard for managing users
-- Database and schema
-  - PostgreSQL with Drizzle ORM
-  - inventory, sales, payment, and auth tables
+### POS and inventory
 
-## Tech Stack
+- Search active products and variants from the sales screen.
+- Build carts with quantity changes, fixed or percentage discounts, and configurable tax.
+- Accept cash, QRIS, card, and transfer payments.
+- Validate stock and payment amounts before completing a sale.
+- Decrease stock and write inventory transactions atomically when a sale is completed.
+- Manage products with multiple variants, SKUs, cost prices, selling prices, stock quantities, and active status.
+- Create and manage product categories.
+- Import products and initial stock from CSV with a downloadable template, row validation, duplicate-SKU detection, and automatic category creation.
 
-- Next.js 15
-- React 19
-- TypeScript
-- Tailwind CSS
-- Drizzle ORM
-- Neon Postgres
+### Sales and receipts
+
+- Browse store sales history with invoice, cashier, totals, status, and sale date.
+- View today's sales count and revenue.
+- Review sales grouped by product and category, including best-selling products.
+- Open a printable receipt for a transaction.
+- Include store contact details, receipt header/footer text, payment information, tax, discounts, totals, and change on receipts.
+
+### Administration
+
+- Email/password authentication with Better Auth.
+- Google OAuth support when configured.
+- Protected dashboard routes and permission checks for administrative features.
+- Manage users and roles.
+- Update the active store's name, code, address, phone, email, logo URL, currency, timezone, tax settings, negative-stock policy, and receipt branding.
+- Keep store catalog, sales, payments, and inventory data isolated by store ID.
+
+## Tech stack
+
+- Next.js 15 App Router and Turbopack
+- React 19 and TypeScript
+- Tailwind CSS 4
+- Drizzle ORM with PostgreSQL / Neon
 - Better Auth
-- shadcn/ui style components
+- React Hook Form and Zod
+- Papa Parse for CSV imports
+- Base UI and shadcn-style components
 
-## Project Structure
+## Routes
 
-- `app/` – route pages and app router entry points
-- `components/` – UI components for auth, dashboard, POS, products, sales, and reports
-- `db/` – database schema, connection, and seed data
-- `lib/` – auth setup, helper utilities, and server actions
-- `migrations/` – generated SQL migrations
-- `middleware.ts` – route protection for dashboard pages
+- `/login` and `/register` - authentication
+- `/dashboard/sales` - point of sale
+- `/dashboard/sales/reports` - sales history and reports
+- `/dashboard/products` - products, variants, and CSV import
+- `/dashboard/categories` - product categories
+- `/dashboard/users` - user management
+- `/dashboard/settings/store` - store and receipt settings
+- `/dashboard/settings/profile` - signed-in user profile
+- `/sales/receipt/[id]` - printable transaction receipt
 
-## Getting Started
+## Getting started
+
+### Prerequisites
+
+- Node.js with npm
+- A PostgreSQL database, such as Neon
 
 ### 1. Install dependencies
 
@@ -55,65 +68,51 @@ A Next.js point-of-sale and inventory management application for managing produc
 npm install
 ```
 
-### 2. Set up environment variables
+### 2. Configure environment variables
 
-Create a `.env` file in the project root with at least:
+Create `.env` in the project root:
 
 ```env
-DATABASE_URL="your_neon_postgres_connection_string"
-GOOGLE_CLIENT_ID="your_google_client_id"
-GOOGLE_CLIENT_SECRET="your_google_client_secret"
+DATABASE_URL="your_postgres_connection_string"
 BETTER_AUTH_SECRET="your_auth_secret"
 BETTER_AUTH_URL="http://localhost:3000"
+GOOGLE_CLIENT_ID="your_google_client_id"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
 ```
 
-### 3. Run database migrations
+The Google variables are needed only when Google sign-in is enabled. `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `BETTER_AUTH_URL` are required for a local run.
+
+### 3. Create the database schema
+
+Generate a migration after schema changes, then apply migrations:
 
 ```bash
 npm run generate
 npm run migrate
 ```
 
-### 4. Seed demo data
+### 4. Seed data (optional)
 
 ```bash
 npm run db:seed
 ```
 
-### 5. Start the app
+### 5. Start the development server
 
 ```bash
 npm run dev
 ```
 
-Then open http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000), register or sign in, then configure the store before using the POS.
 
-## Authentication
-
-The app uses Better Auth with a Drizzle adapter. Authentication is protected by middleware for the `/dashboard` route group. Users can sign up, sign in, and log out from the app UI.
-
-## Sales Flow
-
-The POS workflow is built around the sales server actions:
-
-- fetch active products and variants
-- create sale records with invoice numbers
-- validate stock, quantity, discounts, and payment
-- create payment rows and inventory transactions
-- update stock automatically on sale completion
-
-## Available Scripts
+## Available scripts
 
 ```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-npm run generate
-npm run migrate
-npm run db:seed
+npm run dev       # Start the development server
+npm run build     # Create a production build
+npm run start     # Start the production server
+npm run lint      # Run ESLint
+npm run generate  # Generate Drizzle migrations
+npm run migrate   # Apply Drizzle migrations
+npm run db:seed   # Seed the database
 ```
-
-## Notes
-
-This project is designed as a local business inventory and POS dashboard. It is ready for extension with features like order history filtering, stock adjustments, supplier management, and admin analytics.
