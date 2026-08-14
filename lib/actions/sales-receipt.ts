@@ -8,10 +8,12 @@ import {
   user,
   payment,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { getCurrentStoreId } from "./store";
 
 export async function getSaleById(id: string) {
   try {
+    const storeId = await getCurrentStoreId();
     const [saleData] = await db
       .select({
         id: sale.id,
@@ -30,7 +32,7 @@ export async function getSaleById(id: string) {
       })
       .from(sale)
       .innerJoin(user, eq(sale.cashierId, user.id))
-      .where(eq(sale.id, id))
+      .where(and(eq(sale.id, id), eq(sale.storeId, storeId)))
       .limit(1);
 
     if (!saleData) {
@@ -83,4 +85,3 @@ export async function getSaleById(id: string) {
     throw new Error(`Failed to fetch sale ${id}`);
   }
 }
-

@@ -4,16 +4,14 @@ import {
   category,
   product,
   productVariant,
+  store,
+  storeSettings,
 } from "@/db/schema";
 
 import { eq } from "drizzle-orm";
-import { randomUUID } from "crypto";
 import {auth} from "@/lib/auth";
-/**
- * =========================================================
- * MASTER DATA
- * =========================================================
- */
+
+// MASTER DATA
 
 const CATEGORIES = [
   "Minuman",
@@ -27,9 +25,7 @@ const CATEGORIES = [
 ];
 
 const PRODUCTS = [
-  // =======================================================
   // MINUMAN
-  // =======================================================
 
   {
     name: "Air Mineral",
@@ -161,9 +157,7 @@ const PRODUCTS = [
     ],
   },
 
-  // =======================================================
   // MAKANAN POKOK
-  // =======================================================
 
   {
     name: "Beras Premium",
@@ -281,9 +275,7 @@ const PRODUCTS = [
     ],
   },
 
-  // =======================================================
   // MAKANAN INSTAN
-  // =======================================================
 
   {
     name: "Mi Goreng",
@@ -369,9 +361,7 @@ const PRODUCTS = [
     ],
   },
 
-  // =======================================================
   // CAMILAN
-  // =======================================================
 
   {
     name: "Keripik Kentang",
@@ -491,9 +481,7 @@ const PRODUCTS = [
     ],
   },
 
-  // =======================================================
   // PERAWATAN DIRI
-  // =======================================================
 
   {
     name: "Sabun Mandi Cair",
@@ -599,9 +587,7 @@ const PRODUCTS = [
     ],
   },
 
-  // =======================================================
   // KEBERSIHAN RUMAH
-  // =======================================================
 
   {
     name: "Sabun Cuci Piring",
@@ -699,9 +685,7 @@ const PRODUCTS = [
     ],
   },
 
-  // =======================================================
   // BUMBU & BAHAN MASAK
-  // =======================================================
 
   {
     name: "Garam Dapur",
@@ -894,18 +878,8 @@ const PRODUCTS = [
   },
 ];
 
-/**
- * =========================================================
- * DEVELOPMENT USERS
- *
- * IMPORTANT:
- * Better Auth owns the user table.
- *
- * We DO NOT delete users.
- * We only create them if they don't exist.
- * =========================================================
- */
 
+// Better Auth User
 const SEED_USERS = [
   {
     name: "admin",
@@ -924,21 +898,11 @@ const SEED_USERS = [
   },
 ];
 
-/**
- * =========================================================
- * HELPERS
- * =========================================================
- */
+// HELPERS
 
 function money(value: number) {
   return value.toFixed(2);
 }
-
-/**
- * =========================================================
- * SEED
- * =========================================================
- */
 
 async function seed() {
   if (process.env.NODE_ENV === "production") {
@@ -949,11 +913,7 @@ async function seed() {
 
   console.log("Seeding master data...");
 
-  /**
-   * -------------------------------------------------------
-   * 1. CREATE / REUSE DEVELOPMENT USERS
-   * -------------------------------------------------------
-   */
+  // CREATE / REUSE DEVELOPMENT USERS
 
   const cashierIds: string[] = [];
 
@@ -987,47 +947,52 @@ async function seed() {
     `Users ready: ${cashierIds.length}`,
   );
 
-  /**
-   * -------------------------------------------------------
-   * 2. CLEAR MASTER DATA
-   * -------------------------------------------------------
-   *
-   * We only clear:
-   * - product_variant
-   * - product
-   * - category
-   *
-   * We intentionally DO NOT touch:
-   * - sale
-   * - saleItem
-   * - payment
-   * - inventoryTransaction
-   * - user
-   *
-   * This seed is intended for development/master data.
-   *
-   * IMPORTANT:
-   * If existing sale/inventoryTransaction rows reference
-   * these variants, PostgreSQL will prevent deletion because
-   * of foreign keys.
-   */
-
+   // CLEAR MASTER DATA
   await db.delete(productVariant);
   await db.delete(product);
   await db.delete(category);
 
   console.log("Existing master data cleared.");
 
-  /**
-   * -------------------------------------------------------
-   * 3. CATEGORIES
-   * -------------------------------------------------------
-   */
+  // Store + Store Settings
+  const [newStore] = await db
+    .insert(store)
+    .values({
+      name: "My Store",
+      code: "STORE-001",
+      address: "Jl. Contoh No. 123",
+      phone: "081234567890",
+      email: "store@example.com",
+      isActive: true,
+    })
+    .returning({
+      id: store.id,
+    });
+
+  await db.insert(storeSettings).values({
+    storeId: newStore.id,
+
+    receiptHeader: "MY STORE",
+    receiptFooter: "Terima kasih telah berbelanja",
+
+    taxEnabled: false,
+    taxRate: "0",
+
+    currency: "IDR",
+    timezone: "Asia/Jakarta",
+
+    allowNegativeStock: false,
+  });
+
+  console.log(`Store created: ${newStore.id}`);
+
+  // CATEGORIES
 
   const insertedCategories = await db
     .insert(category)
     .values(
       CATEGORIES.map((name) => ({
+        storeId: newStore.id,
         name,
       })),
     )
@@ -1044,11 +1009,7 @@ async function seed() {
     `Categories created: ${insertedCategories.length}`,
   );
 
-  /**
-   * -------------------------------------------------------
-   * 4. PRODUCTS
-   * -------------------------------------------------------
-   */
+  // PRODUCTS
 
   const productRows = PRODUCTS.map((item) => {
     const categoryId = categoryMap.get(
@@ -1063,6 +1024,7 @@ async function seed() {
 
     return {
       name: item.name,
+      storeId: newStore.id,
       description: item.description,
       categoryId,
       isActive: true,
@@ -1078,19 +1040,7 @@ async function seed() {
     `Products created: ${insertedProducts.length}`,
   );
 
-  /**
-   * -------------------------------------------------------
-   * 5. PRODUCT VARIANTS + INITIAL STOCK
-   * -------------------------------------------------------
-   *
-   * stockQuantity is now stored directly in
-   * productVariant because this is a single-store POS.
-   *
-   * We intentionally DO NOT create
-   * inventoryTransaction records here.
-   *
-   * Seed = master/setup data only.
-   */
+  // PRODUCT VARIANTS + INITIAL STOCK
 
   const variantRows = [];
 
@@ -1137,11 +1087,7 @@ async function seed() {
     `Initial stock assigned to ${insertedVariants.length} variants.`,
   );
 
-  /**
-   * -------------------------------------------------------
-   * 6. SUMMARY
-   * -------------------------------------------------------
-   */
+  // SUMMARY
 
   const totalProducts = PRODUCTS.length;
 
@@ -1165,22 +1111,9 @@ async function seed() {
   console.log(
     `Variants   : ${totalVariants}`,
   );
-  console.log(
-    "Initial stock per variant: 100",
-  );
-  console.log(
-    "Inventory transactions: 0",
-  );
-  console.log(
-    "==========================================",
-  );
+ 
 }
 
-/**
- * =========================================================
- * RUN
- * =========================================================
- */
 
 seed().catch((error) => {
   console.error("Seeding failed:");

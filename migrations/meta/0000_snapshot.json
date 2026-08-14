@@ -1,5 +1,5 @@
 {
-  "id": "e2584067-fedc-4cbe-badd-a32ab9566dbe",
+  "id": "3bee1032-27df-4e96-8c93-86dcab74f570",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -52,13 +52,13 @@
         },
         "access_token_expires_at": {
           "name": "access_token_expires_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
         "refresh_token_expires_at": {
           "name": "refresh_token_expires_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
@@ -76,14 +76,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
         }
@@ -137,6 +137,12 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "store_id": {
+          "name": "store_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "name": {
           "name": "name",
           "type": "text",
@@ -145,27 +151,58 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
+      "indexes": {
+        "category_storeId_idx": {
+          "name": "category_storeId_idx",
+          "columns": [
+            {
+              "expression": "store_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "category_store_id_store_id_fk": {
+          "name": "category_store_id_store_id_fk",
+          "tableFrom": "category",
+          "tableTo": "store",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "category_name_unique": {
-          "name": "category_name_unique",
+        "category_storeId_name_unique": {
+          "name": "category_storeId_name_unique",
           "nullsNotDistinct": false,
           "columns": [
+            "store_id",
             "name"
           ]
         }
@@ -230,7 +267,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -345,7 +382,7 @@
         },
         "paid_at": {
           "name": "paid_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -405,6 +442,12 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "store_id": {
+          "name": "store_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "category_id": {
           "name": "category_id",
           "type": "uuid",
@@ -432,20 +475,35 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         }
       },
       "indexes": {
+        "product_storeId_idx": {
+          "name": "product_storeId_idx",
+          "columns": [
+            {
+              "expression": "store_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "product_categoryId_idx": {
           "name": "product_categoryId_idx",
           "columns": [
@@ -463,6 +521,19 @@
         }
       },
       "foreignKeys": {
+        "product_store_id_store_id_fk": {
+          "name": "product_store_id_store_id_fk",
+          "tableFrom": "product",
+          "tableTo": "store",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "product_category_id_category_id_fk": {
           "name": "product_category_id_category_id_fk",
           "tableFrom": "product",
@@ -540,14 +611,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -604,10 +675,6 @@
         "productVariant_sellingPrice_nonnegative": {
           "name": "productVariant_sellingPrice_nonnegative",
           "value": "\"product_variant\".\"selling_price\" >= 0"
-        },
-        "productVariant_stockQuantity_nonnegative": {
-          "name": "productVariant_stockQuantity_nonnegative",
-          "value": "\"product_variant\".\"stock_quantity\" >= 0"
         }
       },
       "isRLSEnabled": false
@@ -622,6 +689,12 @@
           "primaryKey": true,
           "notNull": true,
           "default": "gen_random_uuid()"
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
         },
         "invoice_number": {
           "name": "invoice_number",
@@ -643,7 +716,8 @@
         },
         "discount_type": {
           "name": "discount_type",
-          "type": "text",
+          "type": "discount_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -660,11 +734,12 @@
           "notNull": true,
           "default": "'0'"
         },
-        "tax_value": {
-          "name": "tax_value",
-          "type": "numeric(15, 2)",
+        "tax_rate": {
+          "name": "tax_rate",
+          "type": "numeric(5, 2)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'0'"
         },
         "tax_amount": {
           "name": "tax_amount",
@@ -689,20 +764,53 @@
         },
         "sold_at": {
           "name": "sold_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
+        "voided_at": {
+          "name": "voided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voided_by": {
+          "name": "voided_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "void_reason": {
+          "name": "void_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         }
       },
       "indexes": {
+        "sale_storeId_idx": {
+          "name": "sale_storeId_idx",
+          "columns": [
+            {
+              "expression": "store_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "sale_cashierId_idx": {
           "name": "sale_cashierId_idx",
           "columns": [
@@ -735,12 +843,38 @@
         }
       },
       "foreignKeys": {
+        "sale_store_id_store_id_fk": {
+          "name": "sale_store_id_store_id_fk",
+          "tableFrom": "sale",
+          "tableTo": "store",
+          "columnsFrom": [
+            "store_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "sale_cashier_id_user_id_fk": {
           "name": "sale_cashier_id_user_id_fk",
           "tableFrom": "sale",
           "tableTo": "user",
           "columnsFrom": [
             "cashier_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "sale_voided_by_user_id_fk": {
+          "name": "sale_voided_by_user_id_fk",
+          "tableFrom": "sale",
+          "tableTo": "user",
+          "columnsFrom": [
+            "voided_by"
           ],
           "columnsTo": [
             "id"
@@ -765,9 +899,17 @@
           "name": "sale_subtotal_nonnegative",
           "value": "\"sale\".\"subtotal\" >= 0"
         },
+        "sale_discountValue_nonnegative": {
+          "name": "sale_discountValue_nonnegative",
+          "value": "\n        \"sale\".\"discount_value\" IS NULL\n        OR \"sale\".\"discount_value\" >= 0\n      "
+        },
         "sale_discountAmount_nonnegative": {
           "name": "sale_discountAmount_nonnegative",
           "value": "\"sale\".\"discount_amount\" >= 0"
+        },
+        "sale_taxRate_valid": {
+          "name": "sale_taxRate_valid",
+          "value": "\n        \"sale\".\"tax_rate\" >= 0\n        AND \"sale\".\"tax_rate\" <= 100\n      "
         },
         "sale_taxAmount_nonnegative": {
           "name": "sale_taxAmount_nonnegative",
@@ -890,7 +1032,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "saleItem_saleId_variantId_unique": {
+          "name": "saleItem_saleId_variantId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "sale_id",
+            "variant_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {
         "saleItem_quantity_positive": {
@@ -924,7 +1075,7 @@
         },
         "expires_at": {
           "name": "expires_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
         },
@@ -936,14 +1087,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
         },
@@ -1209,7 +1360,16 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "storeSettings_taxRate_nonnegative": {
+          "name": "storeSettings_taxRate_nonnegative",
+          "value": "\"store_settings\".\"tax_rate\" >= 0"
+        },
+        "storeSettings_taxRate_max": {
+          "name": "storeSettings_taxRate_max",
+          "value": "\"store_settings\".\"tax_rate\" <= 100"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.user": {
@@ -1249,14 +1409,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -1282,7 +1442,7 @@
         },
         "ban_expires": {
           "name": "ban_expires",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         }
@@ -1327,20 +1487,20 @@
         },
         "expires_at": {
           "name": "expires_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -1372,6 +1532,14 @@
     }
   },
   "enums": {
+    "public.discount_type": {
+      "name": "discount_type",
+      "schema": "public",
+      "values": [
+        "PERCENTAGE",
+        "FIXED"
+      ]
+    },
     "public.inventory_transaction_type": {
       "name": "inventory_transaction_type",
       "schema": "public",

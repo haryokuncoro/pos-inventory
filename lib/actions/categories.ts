@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { withErrorHandling } from "@/lib/helper";
 import { categorySchema } from "@/lib/validations/category";
+import { getCurrentStoreId } from "./store";
 
 const CATEGORY_PATH = "/dashboard/categories";
 
@@ -14,8 +15,10 @@ type CreateCategoryInput = z.infer<typeof categorySchema>;
 type UpdateCategoryInput = z.infer<typeof categorySchema>;
 
 export async function getAllCategories() {
-  return withErrorHandling("fetching categories", () =>
+  const storeId = await getCurrentStoreId();
+  return withErrorHandling("fetching categories", async () =>
     db.select().from(category)
+      .where(eq(category.storeId, storeId))
   );
 }
 
@@ -33,10 +36,10 @@ export async function getCategoryById(id: string) {
 export async function createCategory(input: CreateCategoryInput) {
   return withErrorHandling("creating category", async () => {
     const categoryData = categorySchema.parse(input);
-
+    const storeId = await getCurrentStoreId();
     const [createdCategory] = await db
       .insert(category)
-      .values(categoryData)
+      .values({ ...categoryData, storeId })
       .returning();
 
     revalidatePath(CATEGORY_PATH);

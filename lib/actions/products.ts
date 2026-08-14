@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { eq, ilike, inArray, or, sql, desc } from "drizzle-orm";
 import { withErrorHandling } from "@/lib/helper";
+import { getCurrentStoreId } from "./store";
 
 const PRODUCTS_PATH = "/dashboard/products";
 
@@ -233,6 +234,8 @@ export async function createProduct(
   variants: CreateProductVariantInput[],
 ) {
   try {
+    const storeId = await getCurrentStoreId();
+    productData.storeId = storeId;
     const [createdProduct] = await db
       .insert(product)
       .values(productData)

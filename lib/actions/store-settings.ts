@@ -10,6 +10,7 @@ import {
 } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { withErrorHandling } from "@/lib/helper";
+import { getCurrentStoreId } from "./store";
 
 const STORE_SETTINGS_PATH = "/dashboard/settings/store";
 
@@ -79,7 +80,10 @@ export async function updateStoreSettings(
 
 export async function getStoreSettings() {
   return withErrorHandling("fetching store settings", async () => {
-    const storeData = await db.query.store.findFirst();
+    const storeId = await getCurrentStoreId();
+    const storeData = await db.query.store.findFirst({
+      where: eq(store.id, storeId),
+    });
     const storeSettingsData = storeData
       ? await db.query.storeSettings.findFirst({
           where: eq(storeSettings.storeId, storeData.id),

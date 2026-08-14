@@ -7,13 +7,16 @@ import {
   productVariant,
   inventoryTransaction,
 } from "@/db/schema";
+import { getCurrentStoreId } from "../store";
 import { inArray } from "drizzle-orm";
 import {
   productImportRowSchema,
   type ProductImportRow,
 } from "@/lib/validations/product";
 
+
 export async function importProducts(rows: unknown[], userId: string) {
+  const storeId = await getCurrentStoreId();
   const validatedRows: ProductImportRow[] = rows.map((row) =>
     productImportRowSchema.parse(row),
   );
@@ -89,6 +92,7 @@ export async function importProducts(rows: unknown[], userId: string) {
       const [createdCategory] = await tx
         .insert(category)
         .values({
+          storeId,
           name: categoryName,
         })
         .returning();
@@ -160,6 +164,7 @@ export async function importProducts(rows: unknown[], userId: string) {
       const [createdProduct] = await tx
         .insert(product)
         .values({
+          storeId,
           categoryId: categoryRecord.id,
           name: firstRow.name,
         })

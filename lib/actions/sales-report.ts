@@ -7,10 +7,10 @@ import {
   product,
   productVariant,
   category,
-    user,
+  user,
 } from "@/db/schema";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
-
+import { getCurrentStoreId } from "./store";
 
 export type SalesTodaySummary = {
   salesCount: number;
@@ -37,10 +37,9 @@ export type SalesReportSummary = {
   bestSellingProducts: SalesByProductRow[];
 };
 
-
-
 export async function getAllSales() {
   try {
+    const storeId = await getCurrentStoreId();
     const sales = await db
       .select({
         id: sale.id,
@@ -66,6 +65,7 @@ export async function getAllSales() {
       })
       .from(sale)
       .innerJoin(user, eq(sale.cashierId, user.id))
+      .where(eq(sale.storeId, storeId))
       .orderBy(desc(sale.soldAt));
 
     return sales;
@@ -76,10 +76,9 @@ export async function getAllSales() {
   }
 }
 
-
-
 export async function getSalesReportSummary(): Promise<SalesReportSummary> {
   try {
+    const storeId = await getCurrentStoreId();
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
@@ -90,7 +89,13 @@ export async function getSalesReportSummary(): Promise<SalesReportSummary> {
           totalRevenue: sql<number>`coalesce(sum(${sale.totalAmount})::float8, 0)`,
         })
         .from(sale)
-        .where(and(eq(sale.status, "COMPLETED"), gte(sale.soldAt, todayStart))),
+        .where(
+          and(
+            eq(sale.storeId, storeId),
+            eq(sale.status, "COMPLETED"),
+            gte(sale.soldAt, todayStart),
+          ),
+        ),
       db
         .select({
           productName: product.name,
@@ -103,7 +108,7 @@ export async function getSalesReportSummary(): Promise<SalesReportSummary> {
         .innerJoin(product, eq(productVariant.productId, product.id))
         .leftJoin(category, eq(product.categoryId, category.id))
         .innerJoin(sale, eq(saleItem.saleId, sale.id))
-        .where(eq(sale.status, "COMPLETED"))
+        .where(and(eq(sale.storeId, storeId), eq(sale.status, "COMPLETED")))
         .groupBy(product.id, category.id, product.name, category.name)
         .orderBy(
           desc(sql<number>`cast(sum(${saleItem.quantity}) as integer)`),
@@ -120,7 +125,7 @@ export async function getSalesReportSummary(): Promise<SalesReportSummary> {
         .innerJoin(product, eq(productVariant.productId, product.id))
         .leftJoin(category, eq(product.categoryId, category.id))
         .innerJoin(sale, eq(saleItem.saleId, sale.id))
-        .where(eq(sale.status, "COMPLETED"))
+        .where(and(eq(sale.storeId, storeId), eq(sale.status, "COMPLETED")))
         .groupBy(category.id, category.name)
         .orderBy(
           desc(sql<number>`cast(sum(${saleItem.quantity}) as integer)`),

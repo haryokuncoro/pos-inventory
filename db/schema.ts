@@ -11,24 +11,48 @@ import {
   numeric,
   pgEnum,
   check,
+  unique,
 } from "drizzle-orm/pg-core";
 
+// ============================================================
 // AUTH
+// ============================================================
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
+
   name: text("name").notNull(),
+
   email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").default(false).notNull(),
-  image: text("image"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
+
+  emailVerified: boolean("email_verified")
+    .default(false)
     .notNull(),
+
+  image: text("image"),
+
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+  })
+    .defaultNow()
+    .notNull(),
+
+  updatedAt: timestamp("updated_at", {
+    withTimezone: true,
+  })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+
   role: text("role"),
+
   banned: boolean("banned").default(false),
+
   banReason: text("ban_reason"),
-  banExpires: timestamp("ban_expires"),
+
+  banExpires: timestamp("ban_expires", {
+    withTimezone: true,
+  }),
 });
 
 export type InsertUser = typeof user.$inferInsert;
@@ -38,63 +62,135 @@ export const session = pgTable(
   "session",
   {
     id: text("id").primaryKey(),
-    expiresAt: timestamp("expires_at").notNull(),
+
+    expiresAt: timestamp("expires_at", {
+      withTimezone: true,
+    }).notNull(),
+
     token: text("token").notNull().unique(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
       .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .$onUpdate(() => new Date())
+      .notNull(),
+
     ipAddress: text("ip_address"),
+
     userAgent: text("user_agent"),
+
     userId: text("user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => user.id, {
+        onDelete: "cascade",
+      }),
+
     impersonatedBy: text("impersonated_by"),
   },
-  (table) => [index("session_userId_idx").on(table.userId)],
+  (table) => [
+    index("session_userId_idx").on(table.userId),
+  ],
 );
 
 export const account = pgTable(
   "account",
   {
     id: text("id").primaryKey(),
+
     accountId: text("account_id").notNull(),
+
     providerId: text("provider_id").notNull(),
+
     userId: text("user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => user.id, {
+        onDelete: "cascade",
+      }),
+
     accessToken: text("access_token"),
+
     refreshToken: text("refresh_token"),
+
     idToken: text("id_token"),
-    accessTokenExpiresAt: timestamp("access_token_expires_at"),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+
+    accessTokenExpiresAt: timestamp(
+      "access_token_expires_at",
+      {
+        withTimezone: true,
+      },
+    ),
+
+    refreshTokenExpiresAt: timestamp(
+      "refresh_token_expires_at",
+      {
+        withTimezone: true,
+      },
+    ),
+
     scope: text("scope"),
+
     password: text("password"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [index("account_userId_idx").on(table.userId)],
+  (table) => [
+    index("account_userId_idx").on(table.userId),
+  ],
 );
 
 export const verification = pgTable(
   "verification",
   {
     id: text("id").primaryKey(),
+
     identifier: text("identifier").notNull(),
+
     value: text("value").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
+
+    expiresAt: timestamp("expires_at", {
+      withTimezone: true,
+    }).notNull(),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [index("verification_identifier_idx").on(table.identifier)],
+  (table) => [
+    index("verification_identifier_idx").on(
+      table.identifier,
+    ),
+  ],
 );
 
+// ============================================================
 // ENUMS
+// ============================================================
+
 export const saleStatusEnum = pgEnum("sale_status", [
   "COMPLETED",
   "VOIDED",
@@ -110,36 +206,202 @@ export const paymentMethodEnum = pgEnum(
   ],
 );
 
-export const inventoryTransactionTypeEnum = pgEnum(
-  "inventory_transaction_type",
-  [
+export const inventoryTransactionTypeEnum =
+  pgEnum("inventory_transaction_type", [
     "PURCHASE",
     "SALE",
     "SALE_RETURN",
     "ADJUSTMENT_IN",
     "ADJUSTMENT_OUT",
+  ]);
+
+export const discountTypeEnum = pgEnum(
+  "discount_type",
+  [
+    "PERCENTAGE",
+    "FIXED",
   ],
 );
 
-// PRODUCT
-export const category = pgTable("category", {
-  id: uuid("id")
-    .primaryKey()
-    .defaultRandom(),
+// ============================================================
+// STORE
+// ============================================================
 
-  name: text("name")
+export const store = pgTable("store", {
+  id: uuid("id")
+    .defaultRandom()
+    .primaryKey(),
+
+  name: varchar("name", {
+    length: 150,
+  }).notNull(),
+
+  code: varchar("code", {
+    length: 50,
+  })
     .notNull()
     .unique(),
 
-  createdAt: timestamp("created_at")
+  address: text("address"),
+
+  phone: varchar("phone", {
+    length: 30,
+  }),
+
+  email: varchar("email", {
+    length: 150,
+  }),
+
+  logoUrl: text("logo_url"),
+
+  isActive: boolean("is_active")
+    .notNull()
+    .default(true),
+
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+  })
     .defaultNow()
     .notNull(),
 
-  updatedAt: timestamp("updated_at")
+  updatedAt: timestamp("updated_at", {
+    withTimezone: true,
+  })
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
 });
+
+export type InsertStore = typeof store.$inferInsert;
+export type SelectStore = typeof store.$inferSelect;
+
+// ============================================================
+// STORE SETTINGS
+// ============================================================
+
+export const storeSettings = pgTable(
+  "store_settings",
+  {
+    id: uuid("id")
+      .defaultRandom()
+      .primaryKey(),
+
+    // One settings record per store
+    storeId: uuid("store_id")
+      .notNull()
+      .unique()
+      .references(() => store.id, {
+        onDelete: "cascade",
+      }),
+
+    receiptHeader: text("receipt_header"),
+
+    receiptFooter: text("receipt_footer"),
+
+    taxEnabled: boolean("tax_enabled")
+      .notNull()
+      .default(false),
+
+    taxRate: numeric("tax_rate", {
+      precision: 5,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
+
+    currency: varchar("currency", {
+      length: 3,
+    })
+      .notNull()
+      .default("IDR"),
+
+    timezone: varchar("timezone", {
+      length: 50,
+    })
+      .notNull()
+      .default("Asia/Jakarta"),
+
+    allowNegativeStock: boolean(
+      "allow_negative_stock",
+    )
+      .notNull()
+      .default(false),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "storeSettings_taxRate_nonnegative",
+      sql`${table.taxRate} >= 0`,
+    ),
+
+    check(
+      "storeSettings_taxRate_max",
+      sql`${table.taxRate} <= 100`,
+    ),
+  ],
+);
+
+export type InsertStoreSettings =
+  typeof storeSettings.$inferInsert;
+
+export type SelectStoreSettings =
+  typeof storeSettings.$inferSelect;
+
+// ============================================================
+// CATEGORY
+// ============================================================
+
+export const category = pgTable(
+  "category",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .defaultRandom(),
+
+    storeId: uuid("store_id")
+      .notNull()
+      .references(() => store.id, {
+        onDelete: "cascade",
+      }),
+
+    name: text("name").notNull(),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique("category_storeId_name_unique").on(
+      table.storeId,
+      table.name,
+    ),
+
+    index("category_storeId_idx").on(
+      table.storeId,
+    ),
+  ],
+);
 
 export type InsertCategory =
   typeof category.$inferInsert;
@@ -147,12 +409,22 @@ export type InsertCategory =
 export type SelectCategory =
   typeof category.$inferSelect;
 
+// ============================================================
+// PRODUCT
+// ============================================================
+
 export const product = pgTable(
   "product",
   {
     id: uuid("id")
       .primaryKey()
       .defaultRandom(),
+
+    storeId: uuid("store_id")
+      .notNull()
+      .references(() => store.id, {
+        onDelete: "cascade",
+      }),
 
     categoryId: uuid("category_id")
       .notNull()
@@ -166,16 +438,24 @@ export const product = pgTable(
       .default(true)
       .notNull(),
 
-    createdAt: timestamp("created_at")
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .notNull(),
 
-    updatedAt: timestamp("updated_at")
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
+    index("product_storeId_idx").on(
+      table.storeId,
+    ),
+
     index("product_categoryId_idx").on(
       table.categoryId,
     ),
@@ -187,6 +467,10 @@ export type InsertProduct =
 
 export type SelectProduct =
   typeof product.$inferSelect;
+
+// ============================================================
+// PRODUCT VARIANT
+// ============================================================
 
 export const productVariant = pgTable(
   "product_variant",
@@ -201,6 +485,7 @@ export const productVariant = pgTable(
         onDelete: "cascade",
       }),
 
+    // SKU remains globally unique for MVP.
     sku: text("sku")
       .notNull()
       .unique(),
@@ -218,10 +503,10 @@ export const productVariant = pgTable(
     }).notNull(),
 
     /**
-     * Current stock.
+     * Current stock balance.
      *
-     * Single-store assumption:
-     * one variant has one current stock quantity.
+     * Negative values are allowed when
+     * storeSettings.allowNegativeStock = true.
      */
     stockQuantity: integer("stock_quantity")
       .notNull()
@@ -231,11 +516,15 @@ export const productVariant = pgTable(
       .default(true)
       .notNull(),
 
-    createdAt: timestamp("created_at")
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .notNull(),
 
-    updatedAt: timestamp("updated_at")
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
@@ -254,11 +543,6 @@ export const productVariant = pgTable(
       "productVariant_sellingPrice_nonnegative",
       sql`${table.sellingPrice} >= 0`,
     ),
-
-    check(
-      "productVariant_stockQuantity_nonnegative",
-      sql`${table.stockQuantity} >= 0`,
-    ),
   ],
 );
 
@@ -268,7 +552,10 @@ export type InsertProductVariant =
 export type SelectProductVariant =
   typeof productVariant.$inferSelect;
 
+// ============================================================
 // INVENTORY
+// ============================================================
+
 export const inventoryTransaction = pgTable(
   "inventory_transaction",
   {
@@ -280,30 +567,23 @@ export const inventoryTransaction = pgTable(
       .notNull()
       .references(() => productVariant.id),
 
-    type: inventoryTransactionTypeEnum("type")
-      .notNull(),
+    type: inventoryTransactionTypeEnum(
+      "type",
+    ).notNull(),
 
     /**
-     * Positive = stock in
-     * Negative = stock out
+     * Signed quantity:
+     *
+     * PURCHASE       +10
+     * SALE            -2
+     * SALE_RETURN     +2
+     * ADJUSTMENT_IN   +5
+     * ADJUSTMENT_OUT  -5
      */
     quantity: integer("quantity").notNull(),
 
-    /**
-     * Example:
-     * SALE
-     * PURCHASE
-     * SALE_RETURN
-     * ADJUSTMENT
-     */
     referenceType: text("reference_type"),
 
-    /**
-     * ID of the related record.
-     *
-     * Example:
-     * sale.id
-     */
     referenceId: text("reference_id"),
 
     reason: text("reason"),
@@ -312,16 +592,20 @@ export const inventoryTransaction = pgTable(
       .notNull()
       .references(() => user.id),
 
-    createdAt: timestamp("created_at")
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .notNull(),
   },
   (table) => [
-    index("inventoryTransaction_variantId_idx").on(
-      table.variantId,
-    ),
+    index(
+      "inventoryTransaction_variantId_idx",
+    ).on(table.variantId),
 
-    index("inventoryTransaction_reference_idx").on(
+    index(
+      "inventoryTransaction_reference_idx",
+    ).on(
       table.referenceType,
       table.referenceId,
     ),
@@ -333,17 +617,26 @@ export const inventoryTransaction = pgTable(
   ],
 );
 
-export type InsertInventoryTransaction = typeof inventoryTransaction.$inferInsert;
+export type InsertInventoryTransaction =
+  typeof inventoryTransaction.$inferInsert;
 
-export type SelectInventoryTransaction = typeof inventoryTransaction.$inferSelect;
+export type SelectInventoryTransaction =
+  typeof inventoryTransaction.$inferSelect;
 
-// POS / SALES
+// ============================================================
+// SALE
+// ============================================================
+
 export const sale = pgTable(
   "sale",
   {
     id: uuid("id")
       .primaryKey()
       .defaultRandom(),
+
+    storeId: uuid("store_id")
+      .notNull()
+      .references(() => store.id),
 
     invoiceNumber: text("invoice_number")
       .notNull()
@@ -357,7 +650,11 @@ export const sale = pgTable(
       precision: 15,
       scale: 2,
     }).notNull(),
-    discountType: text("discount_type"),
+
+    discountType: discountTypeEnum(
+      "discount_type",
+    ),
+
     discountValue: numeric(
       "discount_value",
       {
@@ -365,6 +662,7 @@ export const sale = pgTable(
         scale: 2,
       },
     ),
+
     discountAmount: numeric(
       "discount_amount",
       {
@@ -374,13 +672,17 @@ export const sale = pgTable(
     )
       .default("0")
       .notNull(),
-    taxValue: numeric(
-      "tax_value",
-      {
-        precision: 15,
-        scale: 2,
-      },
-    ),
+
+    /**
+     * Tax rate snapshot at time of sale.
+     */
+    taxRate: numeric("tax_rate", {
+      precision: 5,
+      scale: 2,
+    })
+      .default("0")
+      .notNull(),
+
     taxAmount: numeric("tax_amount", {
       precision: 15,
       scale: 2,
@@ -397,15 +699,34 @@ export const sale = pgTable(
       .default("COMPLETED")
       .notNull(),
 
-    soldAt: timestamp("sold_at")
+    soldAt: timestamp("sold_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .notNull(),
 
-    createdAt: timestamp("created_at")
+    // VOID audit fields
+    voidedAt: timestamp("voided_at", {
+      withTimezone: true,
+    }),
+
+    voidedBy: text("voided_by").references(
+      () => user.id,
+    ),
+
+    voidReason: text("void_reason"),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .notNull(),
   },
   (table) => [
+    index("sale_storeId_idx").on(
+      table.storeId,
+    ),
+
     index("sale_cashierId_idx").on(
       table.cashierId,
     ),
@@ -420,8 +741,24 @@ export const sale = pgTable(
     ),
 
     check(
+      "sale_discountValue_nonnegative",
+      sql`
+        ${table.discountValue} IS NULL
+        OR ${table.discountValue} >= 0
+      `,
+    ),
+
+    check(
       "sale_discountAmount_nonnegative",
       sql`${table.discountAmount} >= 0`,
+    ),
+
+    check(
+      "sale_taxRate_valid",
+      sql`
+        ${table.taxRate} >= 0
+        AND ${table.taxRate} <= 100
+      `,
     ),
 
     check(
@@ -438,6 +775,10 @@ export const sale = pgTable(
 
 export type InsertSales = typeof sale.$inferInsert;
 export type SelectSales = typeof sale.$inferSelect;
+
+// ============================================================
+// SALE ITEM
+// ============================================================
 
 export const saleItem = pgTable(
   "sale_item",
@@ -480,6 +821,11 @@ export const saleItem = pgTable(
     }).notNull(),
   },
   (table) => [
+    unique("saleItem_saleId_variantId_unique").on(
+      table.saleId,
+      table.variantId,
+    ),
+
     index("saleItem_saleId_idx").on(
       table.saleId,
     ),
@@ -510,10 +856,16 @@ export const saleItem = pgTable(
   ],
 );
 
-export type InsertSaleItem = typeof saleItem.$inferInsert;
-export type SelectSaleItem = typeof saleItem.$inferSelect;
+export type InsertSaleItem =
+  typeof saleItem.$inferInsert;
 
+export type SelectSaleItem =
+  typeof saleItem.$inferSelect;
+
+// ============================================================
 // PAYMENT
+// ============================================================
+
 export const payment = pgTable(
   "payment",
   {
@@ -527,15 +879,18 @@ export const payment = pgTable(
         onDelete: "cascade",
       }),
 
-    method: paymentMethodEnum("method")
-      .notNull(),
+    method: paymentMethodEnum(
+      "method",
+    ).notNull(),
 
     amount: numeric("amount", {
       precision: 15,
       scale: 2,
     }).notNull(),
 
-    paidAt: timestamp("paid_at")
+    paidAt: timestamp("paid_at", {
+      withTimezone: true,
+    })
       .defaultNow()
       .notNull(),
   },
@@ -551,10 +906,16 @@ export const payment = pgTable(
   ],
 );
 
-export type InsertPayment = typeof payment.$inferInsert;
-export type SelectPayment = typeof payment.$inferSelect;
+export type InsertPayment =
+  typeof payment.$inferInsert;
 
+export type SelectPayment =
+  typeof payment.$inferSelect;
+
+// ============================================================
 // RELATIONS
+// ============================================================
+
 export const userRelations = relations(
   user,
   ({ many }) => ({
@@ -587,9 +948,38 @@ export const accountRelations = relations(
   }),
 );
 
+export const storeRelations = relations(
+  store,
+  ({ one, many }) => ({
+    settings: one(storeSettings),
+
+    categories: many(category),
+
+    products: many(product),
+
+    sales: many(sale),
+  }),
+);
+
+export const storeSettingsRelations =
+  relations(
+    storeSettings,
+    ({ one }) => ({
+      store: one(store, {
+        fields: [storeSettings.storeId],
+        references: [store.id],
+      }),
+    }),
+  );
+
 export const categoryRelations = relations(
   category,
-  ({ many }) => ({
+  ({ one, many }) => ({
+    store: one(store, {
+      fields: [category.storeId],
+      references: [store.id],
+    }),
+
     products: many(product),
   }),
 );
@@ -597,6 +987,11 @@ export const categoryRelations = relations(
 export const productRelations = relations(
   product,
   ({ one, many }) => ({
+    store: one(store, {
+      fields: [product.storeId],
+      references: [store.id],
+    }),
+
     category: one(category, {
       fields: [product.categoryId],
       references: [category.id],
@@ -606,21 +1001,22 @@ export const productRelations = relations(
   }),
 );
 
-export const productVariantRelations = relations(
-  productVariant,
-  ({ one, many }) => ({
-    product: one(product, {
-      fields: [productVariant.productId],
-      references: [product.id],
+export const productVariantRelations =
+  relations(
+    productVariant,
+    ({ one, many }) => ({
+      product: one(product, {
+        fields: [productVariant.productId],
+        references: [product.id],
+      }),
+
+      inventoryTransactions: many(
+        inventoryTransaction,
+      ),
+
+      saleItems: many(saleItem),
     }),
-
-    inventoryTransactions: many(
-      inventoryTransaction,
-    ),
-
-    saleItems: many(saleItem),
-  }),
-);
+  );
 
 export const inventoryTransactionRelations =
   relations(
@@ -645,9 +1041,20 @@ export const inventoryTransactionRelations =
 export const saleRelations = relations(
   sale,
   ({ one, many }) => ({
+    store: one(store, {
+      fields: [sale.storeId],
+      references: [store.id],
+    }),
+
     cashier: one(user, {
       fields: [sale.cashierId],
       references: [user.id],
+    }),
+
+    voidedByUser: one(user, {
+      fields: [sale.voidedBy],
+      references: [user.id],
+      relationName: "saleVoidedBy",
     }),
 
     items: many(saleItem),
@@ -681,105 +1088,20 @@ export const paymentRelations = relations(
   }),
 );
 
-export const store = pgTable("store", {
-  id: uuid("id").defaultRandom().primaryKey(),
-
-  name: varchar("name", { length: 150 }).notNull(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-
-  address: text("address"),
-  phone: varchar("phone", { length: 30 }),
-  email: varchar("email", { length: 150 }),
-
-  logoUrl: text("logo_url"),
-
-  isActive: boolean("is_active").notNull().default(true),
-
-  createdAt: timestamp("created_at", {
-    withTimezone: true,
-  }).defaultNow().notNull(),
-
-  updatedAt: timestamp("updated_at", {
-    withTimezone: true,
-  }).defaultNow().notNull(),
-});
-
-export type InsertStore = typeof store.$inferInsert;
-export type SelectStore = typeof store.$inferSelect;
-
-export const storeSettings = pgTable("store_settings", {
-  id: uuid("id").defaultRandom().primaryKey(),
-
-  storeId: uuid("store_id")
-    .notNull()
-    .unique()
-    .references(() => store.id, {
-      onDelete: "cascade",
-    }),
-
-  receiptHeader: text("receipt_header"),
-  receiptFooter: text("receipt_footer"),
-  
-  taxEnabled: boolean("tax_enabled")
-    .notNull()
-    .default(false),
-
-  taxRate: numeric("tax_rate", {
-    precision: 5,
-    scale: 2,
-  })
-    .notNull()
-    .default("0"),
-
-  currency: varchar("currency", {
-    length: 3,
-  })
-    .notNull()
-    .default("IDR"),
-
-  timezone: varchar("timezone", {
-    length: 50,
-  })
-    .notNull()
-    .default("Asia/Jakarta"),
-
-  allowNegativeStock: boolean("allow_negative_stock")
-    .notNull()
-    .default(false),
-
-  createdAt: timestamp("created_at", {
-    withTimezone: true,
-  }).defaultNow().notNull(),
-
-  updatedAt: timestamp("updated_at", {
-    withTimezone: true,
-  }).defaultNow().notNull(),
-});
-
-export type InsertStoreSettings = typeof storeSettings.$inferInsert;
-export type SelectStoreSettings = typeof storeSettings.$inferSelect;
-
-export const storeRelations = relations(store, ({ many }) => ({
-  settings: many(storeSettings),
-}));
-
-export const storeSettingsRelations = relations(
-  storeSettings,
-  ({ one }) => ({
-    store: one(store, {
-      fields: [storeSettings.storeId],
-      references: [store.id],
-    }),
-  }),
-);
-
+// ============================================================
 // SCHEMA
+// ============================================================
+
 export const schema = {
   // Auth
   user,
   session,
   account,
   verification,
+
+  // Store
+  store,
+  storeSettings,
 
   // Product
   category,
@@ -793,6 +1115,4 @@ export const schema = {
   sale,
   saleItem,
   payment,
-  store,
-  storeSettings,
 };
