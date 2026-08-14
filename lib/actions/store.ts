@@ -21,7 +21,7 @@ const getCachedStore = unstable_cache(
   },
   ["current-store"],
   {
-    revalidate: 3600,
+    revalidate: 600, // 10 minutes
   },
 );
 
