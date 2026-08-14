@@ -134,7 +134,7 @@ export function ImportProductsDialog({
       )
 
       if (!result.success) {
-        throw new Error("Import failed.")
+        throw new Error(result.message ?? "Failed to import products.")
       }
 
       setOpen(false)

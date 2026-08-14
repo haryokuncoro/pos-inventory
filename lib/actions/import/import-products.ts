@@ -14,9 +14,9 @@ import {
   type ProductImportRow,
 } from "@/lib/validations/product";
 
-
 export async function importProducts(rows: unknown[], userId: string) {
   const storeId = await getCurrentStoreId();
+
   const validatedRows: ProductImportRow[] = rows.map((row) =>
     productImportRowSchema.parse(row),
   );
@@ -47,7 +47,7 @@ export async function importProducts(rows: unknown[], userId: string) {
     }
 
     /*
-     * 2. Check SKU against database
+     * 2. Find SKUs that already exist in the database.
      */
     const skus = validatedRows.map((row) => row.sku);
 
@@ -58,19 +58,39 @@ export async function importProducts(rows: unknown[], userId: string) {
       },
     });
 
-    if (existingVariants.length > 0) {
-      throw new Error(
-        `SKU already exists: ${existingVariants
-          .map((item) => item.sku)
-          .join(", ")}`,
-      );
+    const existingSkuSet = new Set(
+      existingVariants.map((variant) => variant.sku),
+    );
+
+    const rowsToImport = validatedRows.filter(
+      (row) => !existingSkuSet.has(row.sku),
+    );
+
+    const failedCount = validatedRows.length - rowsToImport.length;
+
+    /*
+     * Nothing new to import.
+     */
+    if (rowsToImport.length === 0) {
+      const respone = {
+        success: false,
+        message: `No new products to import. ${failedCount} SKUs already exist.`,
+        productCount: 0,
+        variantCount: 0,
+        inventoryTransactionCount: 0,
+        successCount: 0,
+        failedCount,
+        skippedSkus: Array.from(existingSkuSet),
+      };
+      console.log("No new products to import. Returning response:", respone);
+      return respone;
     }
 
     /*
      * 3. Load all required categories once
      */
     const categoryNames = [
-      ...new Set(validatedRows.map((row) => row.category)),
+      ...new Set(rowsToImport.map((row) => row.category)),
     ];
 
     const existingCategories = await tx.query.category.findMany({
@@ -102,13 +122,11 @@ export async function importProducts(rows: unknown[], userId: string) {
 
     /*
      * 5. Group CSV rows by product identity
-     *
-     * Product identity:
-     * name + category
+     * Product identity: name + category
      */
     const productGroups = new Map<string, ProductImportRow[]>();
 
-    for (const row of validatedRows) {
+    for (const row of rowsToImport) {
       const key = `${row.name.trim().toLowerCase()}::${row.category
         .trim()
         .toLowerCase()}`;
@@ -124,7 +142,6 @@ export async function importProducts(rows: unknown[], userId: string) {
 
     /*
      * 6. Validate duplicate variant name
-     *    within the same product.
      */
     for (const rows of productGroups.values()) {
       const variantNameSet = new Set<string>();
@@ -180,18 +197,24 @@ export async function importProducts(rows: unknown[], userId: string) {
           .insert(productVariant)
           .values({
             productId: createdProduct.id,
-
             sku: row.sku,
-
             name: row.variantName,
-
             costPrice: row.costPrice.toString(),
-
             sellingPrice: row.sellingPrice.toString(),
-
             stockQuantity: row.stockQuantity,
           })
+          .onConflictDoNothing({
+            target: productVariant.sku,
+          })
           .returning();
+
+        /*
+         * Should only happen if the SKU became a duplicate
+         * between our initial query and this insert.
+         */
+        if (!createdVariant) {
+          continue;
+        }
 
         variantCount++;
 
@@ -201,17 +224,11 @@ export async function importProducts(rows: unknown[], userId: string) {
         if (row.stockQuantity > 0) {
           await tx.insert(inventoryTransaction).values({
             variantId: createdVariant.id,
-
             type: "ADJUSTMENT_IN",
-
             quantity: row.stockQuantity,
-
             referenceType: "PRODUCT_IMPORT",
-
             referenceId: createdVariant.id,
-
             reason: "Initial stock import",
-
             createdBy: userId,
           });
 
@@ -220,11 +237,18 @@ export async function importProducts(rows: unknown[], userId: string) {
       }
     }
 
-    return {
+    const response = {
       success: true,
+      message: `Imported ${productCount} products and ${variantCount} variants. Created ${inventoryTransactionCount} inventory transactions.`,
       productCount,
       variantCount,
       inventoryTransactionCount,
+      successCount: variantCount,
+      failedCount: validatedRows.length - variantCount,
+      skippedSkus: Array.from(existingSkuSet),
     };
+    console.log("Import summary:", response);
+    return response;
+
   });
 }
