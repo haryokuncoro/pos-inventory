@@ -130,7 +130,7 @@ export function PosPage({
         React.useState("");
 
     const [discountType, setDiscountType] =
-        React.useState<DiscountType>("FIXED");
+        React.useState<DiscountType>("PERCENTAGE");
 
     const [discountValueInput, setDiscountValueInput] =
         React.useState("");
@@ -627,7 +627,7 @@ export function PosPage({
 
                 {/* Desktop Cart */}
                 <aside className="hidden w-[380px] shrink-0 xl:flex">
-                    <Card className="sticky top-4 flex h-full max-h-[1050px] w-full flex-col">
+                    <Card className="sticky top-4 flex h-full max-h-[950px] w-full flex-col">
                         <CardHeader className="border-b">
                             <div className="flex items-center justify-between">
                                 <div>

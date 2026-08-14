@@ -13,6 +13,7 @@ import { formatRupiah } from "@/lib/helper";
 import { CartItem, PaymentMethod, PaymentButton, DiscountType } from "./pos";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import * as React from "react";
 
 export type CartContentProps = {
     cart: CartItem[];
@@ -97,6 +98,9 @@ export function CartContent({
     onNewTransaction,
 }: CartContentProps) {
     const paymentSuccess = Boolean(transactionId);
+    const [showDiscountInput, setShowDiscountInput] =
+        React.useState(false);
+    const [showTaxInput, setShowTaxInput] = React.useState(false);
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
@@ -249,101 +253,108 @@ export function CartContent({
                 {/* Discount */}
                 {!paymentSuccess && (
                     <div className="space-y-2">
-                        <p className="text-sm font-medium">
-                            Diskon
-                        </p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-center"
+                            onClick={() =>
+                                setShowDiscountInput((visible) => !visible)
+                            }
+                        >
+                            {showDiscountInput ? "Sembunyikan diskon" : "Tambah diskon"}
+                        </Button>
 
-                        <div className="grid grid-cols-2 gap-2">
-                            <Button
-                                type="button"
-                                variant={
-                                    discountType ===
-                                        "FIXED"
-                                        ? "default"
-                                        : "outline"
-                                }
-                                className="justify-center"
-                                onClick={() =>
-                                    onDiscountTypeChange(
-                                        "FIXED",
-                                    )
-                                }
-                            >
-                                Nominal
-                            </Button>
+                        {showDiscountInput && (
+                            <>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button
+                                        type="button"
+                                        variant={
+                                            discountType === "FIXED"
+                                                ? "default"
+                                                : "outline"
+                                        }
+                                        className="justify-center"
+                                        onClick={() =>
+                                            onDiscountTypeChange("FIXED")
+                                        }
+                                    >
+                                        Nominal
+                                    </Button>
 
-                            <Button
-                                type="button"
-                                variant={
-                                    discountType ===
-                                        "PERCENTAGE"
-                                        ? "default"
-                                        : "outline"
-                                }
-                                className="justify-center"
-                                onClick={() =>
-                                    onDiscountTypeChange(
-                                        "PERCENTAGE",
-                                    )
-                                }
-                            >
-                                Persen (%)
-                            </Button>
-                        </div>
+                                    <Button
+                                        type="button"
+                                        variant={
+                                            discountType === "PERCENTAGE"
+                                                ? "default"
+                                                : "outline"
+                                        }
+                                        className="justify-center"
+                                        onClick={() =>
+                                            onDiscountTypeChange("PERCENTAGE")
+                                        }
+                                    >
+                                        Persen (%)
+                                    </Button>
+                                </div>
 
-                        <Input
-                            type="number"
-                            min={0}
-                            max={
-                                discountType ===
-                                    "PERCENTAGE"
-                                    ? 100
-                                    : undefined
-                            }
-                            step={
-                                discountType ===
-                                    "PERCENTAGE"
-                                    ? "1"
-                                    : "1000"
-                            }
-                            inputMode="numeric"
-                            placeholder={
-                                discountType ===
-                                    "PERCENTAGE"
-                                    ? "Masukkan persen diskon"
-                                    : "Masukkan nominal diskon"
-                            }
-                            value={discountValueInput}
-                            onChange={(event) =>
-                                onDiscountValueChange(
-                                    event.target.value,
-                                )
-                            }
-                        />
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    max={
+                                        discountType === "PERCENTAGE"
+                                            ? 100
+                                            : undefined
+                                    }
+                                    step={
+                                        discountType === "PERCENTAGE"
+                                            ? "1"
+                                            : "1000"
+                                    }
+                                    inputMode="numeric"
+                                    placeholder={
+                                        discountType === "PERCENTAGE"
+                                            ? "Masukkan persen diskon"
+                                            : "Masukkan nominal diskon"
+                                    }
+                                    value={discountValueInput}
+                                    onChange={(event) =>
+                                        onDiscountValueChange(event.target.value)
+                                    }
+                                />
+                            </>
+                        )}
                     </div>
                 )}
 
                 {/* Tax */}
                 {!paymentSuccess && (
                     <div className="space-y-2">
-                        <p className="text-sm font-medium">
-                            Pajak (%)
-                        </p>
-
-                        <Input
-                            type="number"
-                            min={0}
-                            max={100}
-                            step="1"
-                            inputMode="numeric"
-                            placeholder="Masukkan persen pajak"
-                            value={taxValueInput}
-                            onChange={(event) =>
-                                onTaxValueChange(
-                                    event.target.value,
-                                )
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full justify-center"
+                            onClick={() =>
+                                setShowTaxInput((visible) => !visible)
                             }
-                        />
+                        >
+                            {showTaxInput ? "Sembunyikan pajak" : "Tambah pajak"}
+                        </Button>
+
+                        {showTaxInput && (
+                            <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step="1"
+                                inputMode="numeric"
+                                placeholder="Masukkan persen pajak"
+                                value={taxValueInput}
+                                onChange={(event) =>
+                                    onTaxValueChange(event.target.value)
+                                }
+                            />
+                        )}
                     </div>
                 )}
 
