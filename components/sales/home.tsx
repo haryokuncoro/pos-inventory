@@ -12,7 +12,7 @@ export default async function SaleHomePage({
   query,
   page,
 }: SaleHomePageProps) {
-  const pageSize = 40
+  const pageSize = 12
   const [catalogResult, categories] = await Promise.all([
     getSaleProductsPaginated({
       page,
@@ -23,7 +23,7 @@ export default async function SaleHomePage({
   ])
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-6xl">
       <PosPage
         products={catalogResult.items}
         categories={categories.map((category) => category.name)}
