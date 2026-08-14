@@ -12,7 +12,7 @@ export default async function SaleHomePage({
   query,
   page,
 }: SaleHomePageProps) {
-  const pageSize = 30
+  const pageSize = 40
   const [catalogResult, categories] = await Promise.all([
     getSaleProductsPaginated({
       page,
