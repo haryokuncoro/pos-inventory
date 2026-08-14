@@ -6,6 +6,9 @@ import {
   productVariant,
   store,
   storeSettings,
+  sale,
+  saleItem,
+  inventoryTransaction,
 } from "@/db/schema";
 
 import { eq } from "drizzle-orm";
@@ -948,6 +951,11 @@ async function seed() {
   );
 
    // CLEAR MASTER DATA
+  await db.delete(inventoryTransaction);
+  await db.delete(saleItem);
+  await db.delete(sale);
+  await db.delete(storeSettings);
+  await db.delete(store); 
   await db.delete(productVariant);
   await db.delete(product);
   await db.delete(category);
