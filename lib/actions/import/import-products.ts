@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { db } from "@/db/drizzle";
 import {
   category,
@@ -7,14 +9,22 @@ import {
   productVariant,
   inventoryTransaction,
 } from "@/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 import { getCurrentStoreId } from "../store";
-import { inArray } from "drizzle-orm";
 import {
   productImportRowSchema,
   type ProductImportRow,
 } from "@/lib/validations/product";
 
-export async function importProducts(rows: unknown[], userId: string) {
+export async function importProducts(rows: unknown[]) {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session?.user?.id) {
+    throw new Error("You must be signed in to import products.");
+  }
+
+  const userId = session.user.id;
   const storeId = await getCurrentStoreId();
 
   const validatedRows: ProductImportRow[] = rows.map((row) =>
@@ -52,7 +62,15 @@ export async function importProducts(rows: unknown[], userId: string) {
     const skus = validatedRows.map((row) => row.sku);
 
     const existingVariants = await tx.query.productVariant.findMany({
-      where: inArray(productVariant.sku, skus),
+      where: and(
+        inArray(productVariant.sku, skus),
+        eq(product.storeId, storeId),
+      ),
+      with: {
+        product: {
+          columns: {},
+        },
+      },
       columns: {
         sku: true,
       },
@@ -94,7 +112,10 @@ export async function importProducts(rows: unknown[], userId: string) {
     ];
 
     const existingCategories = await tx.query.category.findMany({
-      where: inArray(category.name, categoryNames),
+      where: and(
+        inArray(category.name, categoryNames),
+        eq(category.storeId, storeId),
+      ),
     });
 
     const categoryMap = new Map(
@@ -237,7 +258,10 @@ export async function importProducts(rows: unknown[], userId: string) {
       }
     }
 
-    const response = {
+    revalidatePath("/dashboard/products");
+    revalidatePath("/dashboard/categories");
+
+    return {
       success: true,
       message: `Imported ${productCount} products and ${variantCount} variants. Created ${inventoryTransactionCount} inventory transactions.`,
       productCount,
@@ -247,8 +271,5 @@ export async function importProducts(rows: unknown[], userId: string) {
       failedCount: validatedRows.length - variantCount,
       skippedSkus: Array.from(existingSkuSet),
     };
-    console.log("Import summary:", response);
-    return response;
-
   });
 }

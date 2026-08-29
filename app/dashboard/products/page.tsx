@@ -17,6 +17,8 @@ import {
 import { AccessDenied } from "@/components/auth/permission-guard"
 import { checkPermission } from "@/lib/actions/users"
 
+export const dynamic = "force-dynamic"
+
 export default async function ProductPage() {
   const allowed = await checkPermission({
         products: ["view"],

@@ -26,7 +26,6 @@ export type CreateSaleItemInput = {
 };
 
 export type CreateSaleInput = {
-  cashierId?: string;
   items: CreateSaleItemInput[];
   discountType?: "FIXED" | "PERCENTAGE";
   discountValue?: number;
@@ -175,6 +174,7 @@ export async function getSaleProductsPaginated(
   input: GetSaleProductsPaginatedInput = {},
 ): Promise<PaginatedSaleProductsResult> {
   try {
+    const storeId = await getCurrentStoreId();
     const pageSize = Math.min(Math.max(input.pageSize ?? 24, 1), 100);
 
     const requestedPage = Math.max(input.page ?? 1, 1);
@@ -201,6 +201,7 @@ export async function getSaleProductsPaginated(
         and(
           eq(product.isActive, true),
           eq(productVariant.isActive, true),
+          eq(product.storeId, storeId),
           whereCondition,
         ),
       );
@@ -236,6 +237,7 @@ export async function getSaleProductsPaginated(
         and(
           eq(product.isActive, true),
           eq(productVariant.isActive, true),
+          eq(product.storeId, storeId),
           whereCondition,
         ),
       )
@@ -279,7 +281,7 @@ export async function createSale(
       headers: await headers(),
     });
 
-    const cashierId = input.cashierId ?? session?.user?.id;
+    const cashierId = session?.user?.id;
 
     if (!cashierId) {
       return errorResult("Cashier tidak valid. Silakan login kembali.");

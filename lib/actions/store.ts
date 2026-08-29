@@ -1,8 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { db } from "@/db/drizzle";
-import { store } from "@/db/schema";
+import { store, storeSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import {getStoreSettings} from "./store-settings";
 
 const getCachedStore = unstable_cache(
   async () => {
@@ -26,8 +25,22 @@ const getCachedStore = unstable_cache(
   },
 );
 
-const getCachedStoreSettings = unstable_cache(
-  async () => await getStoreSettings(),
+const getCachedStoreWithSettings = unstable_cache(
+  async () => {
+    const currentStore = await db.query.store.findFirst({
+      where: eq(store.isActive, true),
+    });
+
+    if (!currentStore) {
+      throw new Error("No active store configured.");
+    }
+
+    const settings = await db.query.storeSettings.findFirst({
+      where: eq(storeSettings.storeId, currentStore.id),
+    });
+
+    return { store: currentStore, settings: settings ?? null };
+  },
   ["current-store-settings"],
   {
     revalidate: 1800, // 30 minutes
@@ -41,6 +54,5 @@ export async function getCurrentStoreId() {
 }
 
 export async function getCurrentStore() {
-  const currentStoreSettings = await getCachedStoreSettings();
-  return currentStoreSettings;
+  return getCachedStoreWithSettings();
 }

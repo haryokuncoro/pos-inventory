@@ -46,6 +46,12 @@ export async function updateStoreSettings(
   return withErrorHandling(
     `updating store settings for store with id ${storeId}`,
     async () => {
+      const currentStoreId = await getCurrentStoreId();
+
+      if (storeId !== currentStoreId) {
+        throw new Error("Store not found");
+      }
+
       const [updatedStore] = await db
         .update(store)
         .set(storeData)

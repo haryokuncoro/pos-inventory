@@ -23,12 +23,10 @@ import {
 import { importProducts } from "@/lib/actions/import/import-products"
 
 type ImportProductsDialogProps = {
-  userId: string
   onSuccess?: () => void
 }
 
 export function ImportProductsDialog({
-  userId,
   onSuccess,
 }: ImportProductsDialogProps) {
   const [open, setOpen] = React.useState(false)
@@ -128,10 +126,7 @@ export function ImportProductsDialog({
           > => Boolean(row),
         )
 
-      const result = await importProducts(
-        data,
-        userId,
-      )
+      const result = await importProducts(data)
 
       if (!result.success) {
         throw new Error(result.message ?? "Failed to import products.")

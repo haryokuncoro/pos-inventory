@@ -20,7 +20,6 @@ import ProductList from "./list"
 import ProductToolbar from "./toolbar"
 import GeneralPagination from "@/components/dashboard/pagination"
 import { ImportProductsDialog } from "./import"
-import { authClient } from "@/lib/auth-client"
 
 const variantSchema = z.object({
   id: z.string().optional(),
@@ -81,7 +80,6 @@ const defaultValues: ProductFormValues = {
 }
 
 export default function ProductTable({ initialProducts, initialCategories }: ProductTableProps) {
-  const { data: session } = authClient.useSession()
   const [products, setProducts] = useState<ProductRow[]>(initialProducts.items)
   const [categories] = useState<SelectCategory[]>(initialCategories)
 
@@ -283,8 +281,7 @@ export default function ProductTable({ initialProducts, initialCategories }: Pro
         />
       </div>
 
-       <ImportProductsDialog
-                userId={session?.user.id ?? ""}
+      <ImportProductsDialog
                 onSuccess={fetchProducts}
               />
 

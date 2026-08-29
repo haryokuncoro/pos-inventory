@@ -9,16 +9,19 @@ import {
   InsertProductVariant,
   category,
 } from "@/db/schema";
-import { eq, ilike, inArray, or, sql, desc } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { withErrorHandling } from "@/lib/helper";
 import { getCurrentStoreId } from "./store";
 
 const PRODUCTS_PATH = "/dashboard/products";
 
-type CreateProductInput = Omit<InsertProduct, "id" | "createdAt" | "updatedAt">;
+type CreateProductInput = Omit<
+  InsertProduct,
+  "id" | "storeId" | "createdAt" | "updatedAt"
+>;
 
 type UpdateProductInput = Partial<
-  Omit<InsertProduct, "id" | "createdAt" | "updatedAt">
+  Omit<InsertProduct, "id" | "storeId" | "createdAt" | "updatedAt">
 >;
 
 type CreateProductVariantInput = Omit<
@@ -32,6 +35,7 @@ export type ProductVariantInput = CreateProductVariantInput & {
 
 export type ProductWithCategoryAndVariants = {
   id: string;
+  storeId: string;
   categoryId: string;
   name: string;
   description: string | null;
@@ -72,6 +76,7 @@ export async function getProductsPaginated(
   input: GetProductsPaginatedInput = {},
 ): Promise<PaginatedProductsResult> {
   try {
+    const storeId = await getCurrentStoreId();
     const pageSize = Math.min(Math.max(input.pageSize ?? 5, 1), 100);
     const requestedPage = Math.max(input.page ?? 1, 1);
     const normalizedQuery = input.query?.trim() ?? "";
@@ -93,13 +98,18 @@ export async function getProductsPaginated(
         )
       : undefined;
 
+    const storeWhereCondition = and(
+      eq(product.storeId, storeId),
+      whereCondition,
+    );
+
     const [{ count }] = await db
       .select({
         count: sql<number>`count(*)::int`,
       })
       .from(product)
       .leftJoin(category, eq(product.categoryId, category.id))
-      .where(whereCondition);
+      .where(storeWhereCondition);
 
     const totalItems = Number(count ?? 0);
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -109,6 +119,7 @@ export async function getProductsPaginated(
     const products = await db
       .select({
         id: product.id,
+        storeId: product.storeId,
         categoryId: product.categoryId,
         name: product.name,
         description: product.description,
@@ -119,7 +130,7 @@ export async function getProductsPaginated(
       })
       .from(product)
       .leftJoin(category, eq(product.categoryId, category.id))
-      .where(whereCondition)
+      .where(storeWhereCondition)
       .orderBy(desc(product.createdAt))
       .limit(pageSize)
       .offset(offset);
@@ -175,70 +186,27 @@ export async function getProductsPaginated(
   }
 }
 
-export async function getAllProducts(): Promise<
-  ProductWithCategoryAndVariants[]
-> {
-  try {
-    const products = await db
-      .select({
-        id: product.id,
-        categoryId: product.categoryId,
-        name: product.name,
-        description: product.description,
-        isActive: product.isActive,
-        createdAt: product.createdAt,
-        updatedAt: product.updatedAt,
-        categoryName: category.name,
-      })
-      .from(product)
-      .leftJoin(category, eq(product.categoryId, category.id));
-
-    const variants = await db
-      .select({
-        id: productVariant.id,
-        productId: productVariant.productId,
-        sku: productVariant.sku,
-        name: productVariant.name,
-        costPrice: productVariant.costPrice,
-        sellingPrice: productVariant.sellingPrice,
-        stockQuantity: productVariant.stockQuantity,
-        isActive: productVariant.isActive,
-        createdAt: productVariant.createdAt,
-        updatedAt: productVariant.updatedAt,
-      })
-      .from(productVariant);
-
-    return products.map((product) => ({
-      ...product,
-      variants: variants.filter((variant) => variant.productId === product.id),
-    }));
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    throw new Error("Failed to fetch products");
-  }
-}
-
-export async function getCategoryById(id: string) {
-  return withErrorHandling(`fetching category with id ${id}`, async () => {
-    try {
-      return await db.select().from(category).where(eq(category.id, id));
-    } catch (error) {
-      console.error(`Error fetching category with id ${id}:`, error);
-      throw new Error(`Failed to fetch category with id ${id}`);
-    }
-  });
-}
-
 export async function createProduct(
   productData: CreateProductInput,
   variants: CreateProductVariantInput[],
 ) {
   try {
     const storeId = await getCurrentStoreId();
-    productData.storeId = storeId;
+    const [existingCategory] = await db
+      .select({ id: category.id })
+      .from(category)
+      .where(
+        and(eq(category.id, productData.categoryId), eq(category.storeId, storeId)),
+      )
+      .limit(1);
+
+    if (!existingCategory) {
+      throw new Error("Category not found");
+    }
+
     const [createdProduct] = await db
       .insert(product)
-      .values(productData)
+      .values({ ...productData, storeId })
       .returning();
 
     if (!createdProduct) {
@@ -276,10 +244,11 @@ export async function updateProduct(
   variants: ProductVariantInput[],
 ) {
   try {
+    const storeId = await getCurrentStoreId();
     const [updatedProduct] = await db
       .update(product)
       .set(productData)
-      .where(eq(product.id, id))
+      .where(and(eq(product.id, id), eq(product.storeId, storeId)))
       .returning();
 
     if (!updatedProduct) {
@@ -352,9 +321,16 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string) {
   await withErrorHandling(`deleting product with id ${id}`, async () => {
-    const result = await db.delete(product).where(eq(product.id, id));
-    revalidatePath(PRODUCTS_PATH);
-    return result;
-  });
+    const storeId = await getCurrentStoreId();
+    const result = await db
+      .delete(product)
+      .where(and(eq(product.id, id), eq(product.storeId, storeId)))
+      .returning({ id: product.id });
 
+    if (result.length === 0) {
+      throw new Error("Product not found");
+    }
+
+    revalidatePath(PRODUCTS_PATH);
+  });
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/drizzle";
 import { category } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { withErrorHandling } from "@/lib/helper";
 import { categorySchema } from "@/lib/validations/category";
@@ -20,17 +20,6 @@ export async function getAllCategories() {
     db.select().from(category)
       .where(eq(category.storeId, storeId))
   );
-}
-
-export async function getCategoryById(id: string) {
-  return withErrorHandling(`fetching category with id ${id}`, async () => {
-    const [result] = await db
-      .select()
-      .from(category)
-      .where(eq(category.id, id));
-
-    return result ?? null;
-  });
 }
 
 export async function createCategory(input: CreateCategoryInput) {
@@ -50,12 +39,17 @@ export async function createCategory(input: CreateCategoryInput) {
 export async function updateCategory(id: string, input: UpdateCategoryInput) {
   return withErrorHandling(`updating category with id ${id}`, async () => {
     const categoryData = categorySchema.parse(input);
+    const storeId = await getCurrentStoreId();
 
     const [updatedCategory] = await db
       .update(category)
       .set(categoryData)
-      .where(eq(category.id, id))
+      .where(and(eq(category.id, id), eq(category.storeId, storeId)))
       .returning();
+
+    if (!updatedCategory) {
+      throw new Error("Category not found");
+    }
 
     revalidatePath(CATEGORY_PATH);
     return updatedCategory;
@@ -64,7 +58,16 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
 
 export async function deleteCategory(id: string) {
   return withErrorHandling(`deleting category with id ${id}`, async () => {
-    await db.delete(category).where(eq(category.id, id));
+    const storeId = await getCurrentStoreId();
+    const deletedCategories = await db
+      .delete(category)
+      .where(and(eq(category.id, id), eq(category.storeId, storeId)))
+      .returning({ id: category.id });
+
+    if (deletedCategories.length === 0) {
+      throw new Error("Category not found");
+    }
+
     revalidatePath(CATEGORY_PATH);
   });
 }

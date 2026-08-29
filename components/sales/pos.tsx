@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/sheet";
 
 import { createSale } from "@/lib/actions/sales";
-import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 import { ProductCatalog } from "./product-catalog";
 import { formatRupiah, parseAmount } from "@/lib/helper";
@@ -359,12 +358,7 @@ export function PosPage({
         setIsSubmitting(true);
 
         try {
-            const session = await authClient.getSession();
-
-            const cashierId = session.data?.user?.id;
-
             const result = await createSale({
-                cashierId,
                 items: cart.map((item) => ({
                     variantId: item.id,
                     quantity: item.quantity,
