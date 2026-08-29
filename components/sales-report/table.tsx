@@ -1,630 +1,103 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Download } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatRupiah } from "@/lib/helper"
 import type { SalesReportSummary } from "@/lib/actions/sales-report"
+import BreakdownTab from "./breakdown-tab"
+import { downloadSalesCsv, toNumber } from "./formatters"
+import OverviewTab from "./overview-tab"
+import TransactionsTab from "./transactions-tab"
+import type { SaleRow, SalesAggregates } from "./types"
 
-type SaleRow = {
-  id: string
-  invoiceNumber: string
-  cashierId: string
-  cashierName: string
-  subtotal: string
-  discountAmount: string
-  taxAmount: string
-  totalAmount: string
-  status: "COMPLETED" | "VOIDED"
-  soldAt: Date | string
-  createdAt: Date | string
+type SalesReportTableProps = {
+    initialSales: SaleRow[]
+    reportSummary: SalesReportSummary
 }
 
-type SaleTableProps = {
-  initialSales: SaleRow[]
-  reportSummary: SalesReportSummary
+const initialAggregates: SalesAggregates = {
+    transactions: 0,
+    completedTransactions: 0,
+    voidedTransactions: 0,
+    subtotal: 0,
+    discount: 0,
+    tax: 0,
+    total: 0,
+    voidedTotal: 0,
 }
 
-function toCurrency(amount: string | number) {
-  return formatRupiah(Number(amount) || 0)
+export function SalesReportTable({ initialSales, reportSummary }: SalesReportTableProps) {
+    const [query, setQuery] = useState("")
+    const [startDate, setStartDate] = useState("")
+    const [endDate, setEndDate] = useState("")
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(10)
+    const [activeTab, setActiveTab] = useState("overview")
+
+    const filteredSales = useMemo(() => filterSales(initialSales, query, startDate, endDate), [endDate, initialSales, query, startDate])
+    const totalPages = Math.max(1, Math.ceil(filteredSales.length / pageSize))
+    const safePage = Math.min(page, totalPages)
+    const pagedSales = useMemo(() => filteredSales.slice((safePage - 1) * pageSize, safePage * pageSize), [filteredSales, pageSize, safePage])
+    const aggregates = useMemo(() => getAggregates(filteredSales), [filteredSales])
+
+    useEffect(() => {
+        if (page > totalPages) setPage(totalPages)
+    }, [page, totalPages])
+
+    function resetFilters() {
+        setStartDate("")
+        setEndDate("")
+        setPage(1)
+    }
+
+    function updatePageSize(value: number) {
+        setPageSize(value)
+        setPage(1)
+    }
+
+    return <div className="space-y-4 p-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="w-full justify-start overflow-x-auto bg-muted/40 p-1">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                <TabsTrigger value="products">Products</TabsTrigger>
+                <TabsTrigger value="categories">Categories</TabsTrigger>
+                <TabsTrigger value="best-sellers">Best sellers</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview"><OverviewTab reportSummary={reportSummary} /></TabsContent>
+            <TabsContent value="transactions"><TransactionsTab query={query} startDate={startDate} endDate={endDate} pageSize={pageSize} page={safePage} totalPages={totalPages} filteredSales={filteredSales} pagedSales={pagedSales} aggregates={aggregates} onQueryChange={(value) => { setQuery(value); setPage(1) }} onStartDateChange={(value) => { setStartDate(value); setPage(1) }} onEndDateChange={(value) => { setEndDate(value); setPage(1) }} onResetFilters={resetFilters} onPageSizeChange={updatePageSize} onPageChange={setPage} onDownload={() => downloadSalesCsv(filteredSales)} /></TabsContent>
+            <TabsContent value="products"><BreakdownTab title="Sales by product" detail="Qty / Revenue" emptyMessage="No product sales found." rows={reportSummary.salesByProduct} /></TabsContent>
+            <TabsContent value="categories"><BreakdownTab title="Sales by category" detail="Qty / Revenue" emptyMessage="No category sales found." rows={reportSummary.salesByCategory} /></TabsContent>
+            <TabsContent value="best-sellers"><BreakdownTab title="Best-selling products" detail="Top 5" emptyMessage="No best-selling products available." rows={reportSummary.bestSellingProducts} numbered /></TabsContent>
+        </Tabs>
+    </div>
 }
 
-function toDateLabel(value: Date | string) {
-  const date = value instanceof Date ? value : new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return "-"
-  }
-
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date)
-}
-
-function toNumber(amount: string | number) {
-  return Number(amount) || 0
-}
-
-function toCsvCell(value: string | number) {
-  return `"${String(value).replaceAll('"', '""')}"`
-}
-
-export function SalesReportTable({ initialSales, reportSummary }: SaleTableProps) {
-  const [query, setQuery] = useState("")
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [activeTab, setActiveTab] = useState("overview")
-
-  const filteredSales = useMemo(() => {
+function filterSales(sales: SaleRow[], query: string, startDate: string, endDate: string) {
     const normalizedQuery = query.trim().toLowerCase()
-
     const startBoundary = startDate ? new Date(`${startDate}T00:00:00`) : null
     const endBoundary = endDate ? new Date(`${endDate}T23:59:59.999`) : null
 
-    return initialSales.filter((row) => {
-      const soldAtDate = row.soldAt instanceof Date ? row.soldAt : new Date(row.soldAt)
-
-      if (Number.isNaN(soldAtDate.getTime())) {
-        return false
-      }
-
-      if (startBoundary && soldAtDate < startBoundary) {
-        return false
-      }
-
-      if (endBoundary && soldAtDate > endBoundary) {
-        return false
-      }
-
-      if (!normalizedQuery) {
-        return true
-      }
-
-      return (
-        row.invoiceNumber.toLowerCase().includes(normalizedQuery) ||
-        row.cashierName.toLowerCase().includes(normalizedQuery) ||
-        row.status.toLowerCase().includes(normalizedQuery)
-      )
+    return sales.filter((sale) => {
+        const soldAt = sale.soldAt instanceof Date ? sale.soldAt : new Date(sale.soldAt)
+        if (Number.isNaN(soldAt.getTime()) || (startBoundary && soldAt < startBoundary) || (endBoundary && soldAt > endBoundary)) return false
+        return !normalizedQuery || sale.invoiceNumber.toLowerCase().includes(normalizedQuery) || sale.cashierName.toLowerCase().includes(normalizedQuery) || sale.status.toLowerCase().includes(normalizedQuery)
     })
-  }, [endDate, initialSales, query, startDate])
+}
 
-  const totalPages = Math.max(1, Math.ceil(filteredSales.length / pageSize))
-  const safePage = Math.min(page, totalPages)
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages)
-    }
-  }, [page, totalPages])
-
-  const pagedSales = useMemo(() => {
-    const startIndex = (safePage - 1) * pageSize
-    return filteredSales.slice(startIndex, startIndex + pageSize)
-  }, [filteredSales, pageSize, safePage])
-
-  const aggregates = useMemo(() => {
-    return filteredSales.reduce(
-      (summary, sale) => {
-        const subtotal = toNumber(sale.subtotal)
-        const discount = toNumber(sale.discountAmount)
-        const tax = toNumber(sale.taxAmount)
+function getAggregates(sales: SaleRow[]): SalesAggregates {
+    return sales.reduce((summary, sale) => {
         const total = toNumber(sale.totalAmount)
-
         summary.transactions += 1
-
         if (sale.status === "COMPLETED") {
-          summary.completedTransactions += 1
-          summary.subtotal += subtotal
-          summary.discount += discount
-          summary.tax += tax
-          summary.total += total
-          return summary
+            summary.completedTransactions += 1
+            summary.subtotal += toNumber(sale.subtotal)
+            summary.discount += toNumber(sale.discountAmount)
+            summary.tax += toNumber(sale.taxAmount)
+            summary.total += total
+        } else {
+            summary.voidedTransactions += 1
+            summary.voidedTotal += total
         }
-
-        summary.voidedTransactions += 1
-        summary.voidedTotal += total
         return summary
-      },
-      {
-        transactions: 0,
-        completedTransactions: 0,
-        voidedTransactions: 0,
-        subtotal: 0,
-        discount: 0,
-        tax: 0,
-        total: 0,
-        voidedTotal: 0,
-      }
-    )
-  }, [filteredSales])
-
-  function downloadCsv() {
-    const rows = filteredSales.map((sale) => [
-      sale.invoiceNumber,
-      new Date(sale.soldAt).toISOString(),
-      sale.cashierName,
-      sale.subtotal,
-      sale.discountAmount,
-      sale.taxAmount,
-      sale.totalAmount,
-      sale.status,
-    ])
-    const csv = [
-      ["Invoice", "Sold At", "Cashier", "Subtotal", "Discount", "Tax", "Total", "Status"],
-      ...rows,
-    ]
-      .map((row) => row.map(toCsvCell).join(","))
-      .join("\n")
-    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-
-    link.href = url
-    link.download = "sales-transactions.csv"
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
-  return (
-    <div className="space-y-4 p-4">
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(String(value))} className="space-y-4">
-        <TabsList className="w-full justify-start overflow-x-auto bg-muted/40 p-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="best-sellers">Best sellers</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Sales today</p>
-                <p className="text-2xl font-semibold">{reportSummary.today.salesCount}</p>
-                <p className="text-xs text-muted-foreground">Transactions completed today</p>
-                <p className="text-sm font-medium text-primary">
-                  {toCurrency(reportSummary.today.totalRevenue)} revenue
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Products</p>
-                <p className="text-2xl font-semibold">{reportSummary.salesByProduct.length}</p>
-                <p className="text-xs text-muted-foreground">Distinct products sold</p>
-                <p className="text-sm font-medium text-primary">
-                  {reportSummary.bestSellingProducts[0]?.productName ?? "-"}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Categories</p>
-                <p className="text-2xl font-semibold">{reportSummary.salesByCategory.length}</p>
-                <p className="text-xs text-muted-foreground">Active product categories</p>
-                <p className="text-sm font-medium text-primary">
-                  {reportSummary.salesByCategory[0]?.categoryName ?? "-"}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-2">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Best seller</p>
-                <p className="text-2xl font-semibold">
-                  {reportSummary.bestSellingProducts[0]?.quantity ?? 0}
-                </p>
-                <p className="text-xs text-muted-foreground">Units sold</p>
-                <p className="text-sm font-medium text-primary">
-                  {reportSummary.bestSellingProducts[0]?.productName ?? "No data"}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-3 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-medium">Top products</h3>
-                  <span className="text-xs text-muted-foreground">Top 5</span>
-                </div>
-
-                <div className="space-y-2">
-                  {reportSummary.salesByProduct.slice(0, 5).map((row, index) => (
-                    <div key={`${row.productName}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-                      <div>
-                        <p className="font-medium">{row.productName}</p>
-                        <p className="text-xs text-muted-foreground">{row.categoryName ?? "Uncategorized"}</p>
-                      </div>
-                      <div className="text-right text-sm">
-                        <p>{row.quantity} units</p>
-                        <p className="font-medium text-primary">{toCurrency(row.totalRevenue)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-3 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-medium">Top categories</h3>
-                  <span className="text-xs text-muted-foreground">Revenue</span>
-                </div>
-
-                <div className="space-y-2">
-                  {reportSummary.salesByCategory.slice(0, 5).map((row) => (
-                    <div key={row.categoryName} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-                      <p className="font-medium">{row.categoryName}</p>
-                      <div className="text-right text-sm">
-                        <p>{row.quantity} units</p>
-                        <p className="font-medium text-primary">{toCurrency(row.totalRevenue)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-3 p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-medium">Best sellers</h3>
-                  <span className="text-xs text-muted-foreground">Top 5</span>
-                </div>
-
-                <div className="space-y-2">
-                  {reportSummary.bestSellingProducts.map((row, index) => (
-                    <div key={`${row.productName}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                          {index + 1}
-                        </span>
-                        <div>
-                          <p className="font-medium">{row.productName}</p>
-                          <p className="text-xs text-muted-foreground">{row.categoryName ?? "Uncategorized"}</p>
-                        </div>
-                      </div>
-                      <div className="text-right text-sm">
-                        <p>{row.quantity} units</p>
-                        <p className="font-medium text-primary">{toCurrency(row.totalRevenue)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="transactions" className="space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-end md:gap-2">
-              <div className="w-full max-w-sm">
-                <Input
-                  placeholder="Search by invoice, cashier, or status"
-                  value={query}
-                  onChange={(event) => {
-                    setQuery(event.target.value)
-                    setPage(1)
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="space-y-1">
-                  <Label htmlFor="start-date" className="text-xs text-muted-foreground">
-                    From
-                  </Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(event) => {
-                      setStartDate(event.target.value)
-                      setPage(1)
-                    }}
-                    className="w-[150px]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="end-date" className="text-xs text-muted-foreground">
-                    To
-                  </Label>
-                  <Input
-                    id="end-date"
-                    type="date"
-                    value={endDate}
-                    onChange={(event) => {
-                      setEndDate(event.target.value)
-                      setPage(1)
-                    }}
-                    className="w-[150px]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => {
-                    setStartDate("")
-                    setEndDate("")
-                    setPage(1)
-                  }}
-                  disabled={!startDate && !endDate}
-                  className="mb-0.5"
-                >
-                  Reset
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={downloadCsv}
-                disabled={filteredSales.length === 0}
-              >
-                <Download />
-                Download CSV
-              </Button>
-              <Label htmlFor="page-size" className="text-sm text-muted-foreground">
-                Rows
-              </Label>
-              <select
-                id="page-size"
-                className="h-9 rounded-4xl border border-input bg-input/30 px-3 text-sm"
-                value={pageSize}
-                onChange={(event) => {
-                  setPageSize(Number(event.target.value))
-                  setPage(1)
-                }}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="25">25</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Transactions</p>
-                <p className="text-2xl font-semibold">{aggregates.transactions}</p>
-                <p className="text-xs text-muted-foreground">
-                  {aggregates.completedTransactions} completed, {aggregates.voidedTransactions} voided
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Subtotal</p>
-                <p className="text-2xl font-semibold">{toCurrency(aggregates.subtotal)}</p>
-                <p className="text-xs text-muted-foreground">Completed sales only</p>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Discount</p>
-                <p className="text-2xl font-semibold">{toCurrency(aggregates.discount)}</p>
-                <p className="text-xs text-muted-foreground">Applied to completed sales</p>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Tax</p>
-                <p className="text-2xl font-semibold">{toCurrency(aggregates.tax)}</p>
-                <p className="text-xs text-muted-foreground">Collected from completed sales</p>
-              </CardContent>
-            </Card>
-
-            <Card size="sm" className="ring-1 ring-border">
-              <CardContent className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Net Total</p>
-                <p className="text-2xl font-semibold">{toCurrency(aggregates.total)}</p>
-                <p className="text-xs text-muted-foreground">
-                  Voided value: {toCurrency(aggregates.voidedTotal)}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="overflow-hidden rounded-xl border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice</TableHead>
-                  <TableHead>Sold At</TableHead>
-                  <TableHead>Cashier</TableHead>
-                  <TableHead className="text-right">Subtotal</TableHead>
-                  <TableHead className="text-right">Discount</TableHead>
-                  <TableHead className="text-right">Tax</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pagedSales.length > 0 ? (
-                  pagedSales.map((sale) => (
-                    <TableRow key={sale.id}>
-                      <TableCell className="font-medium">{sale.invoiceNumber}</TableCell>
-                      <TableCell>{toDateLabel(sale.soldAt)}</TableCell>
-                      <TableCell>{sale.cashierName}</TableCell>
-                      <TableCell className="text-right">{toCurrency(sale.subtotal)}</TableCell>
-                      <TableCell className="text-right">{toCurrency(sale.discountAmount)}</TableCell>
-                      <TableCell className="text-right">{toCurrency(sale.taxAmount)}</TableCell>
-                      <TableCell className="text-right font-semibold">{toCurrency(sale.totalAmount)}</TableCell>
-                      <TableCell>
-                        <Badge variant={sale.status === "COMPLETED" ? "default" : "secondary"}>
-                          {sale.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="py-6 text-center text-sm text-muted-foreground">
-                      No sales found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <p className="text-sm text-muted-foreground">
-              Showing {pagedSales.length} of {filteredSales.length} sales
-            </p>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((currentPage) => Math.max(currentPage - 1, 1))}
-                disabled={safePage === 1}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Page {safePage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((currentPage) => Math.min(currentPage + 1, totalPages))}
-                disabled={safePage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="products" className="space-y-4">
-          <Card size="sm" className="ring-1 ring-border">
-            <CardContent className="space-y-3 p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-medium">Sales by product</h3>
-                <span className="text-xs text-muted-foreground">Qty / Revenue</span>
-              </div>
-
-              <div className="space-y-2">
-                {reportSummary.salesByProduct.length > 0 ? (
-                  reportSummary.salesByProduct.map((row) => (
-                    <div key={`${row.productName}-${row.categoryName ?? "uncategorized"}`} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-                      <div>
-                        <p className="font-medium">{row.productName}</p>
-                        <p className="text-xs text-muted-foreground">{row.categoryName ?? "Uncategorized"}</p>
-                      </div>
-                      <div className="text-right text-sm">
-                        <p>{row.quantity} units</p>
-                        <p className="font-medium text-primary">{toCurrency(row.totalRevenue)}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No product sales found.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="categories" className="space-y-4">
-          <Card size="sm" className="ring-1 ring-border">
-            <CardContent className="space-y-3 p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-medium">Sales by category</h3>
-                <span className="text-xs text-muted-foreground">Qty / Revenue</span>
-              </div>
-
-              <div className="space-y-2">
-                {reportSummary.salesByCategory.length > 0 ? (
-                  reportSummary.salesByCategory.map((row) => (
-                    <div key={row.categoryName} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-                      <div>
-                        <p className="font-medium">{row.categoryName}</p>
-                      </div>
-                      <div className="text-right text-sm">
-                        <p>{row.quantity} units</p>
-                        <p className="font-medium text-primary">{toCurrency(row.totalRevenue)}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No category sales found.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="best-sellers" className="space-y-4">
-          <Card size="sm" className="ring-1 ring-border">
-            <CardContent className="space-y-3 p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-medium">Best-selling products</h3>
-                <span className="text-xs text-muted-foreground">Top 5</span>
-              </div>
-
-              <div className="space-y-2">
-                {reportSummary.bestSellingProducts.length > 0 ? (
-                  reportSummary.bestSellingProducts.map((row, index) => (
-                    <div key={`${row.productName}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                          {index + 1}
-                        </span>
-                        <div>
-                          <p className="font-medium">{row.productName}</p>
-                          <p className="text-xs text-muted-foreground">{row.categoryName ?? "Uncategorized"}</p>
-                        </div>
-                      </div>
-                      <div className="text-right text-sm">
-                        <p>{row.quantity} units</p>
-                        <p className="font-medium text-primary">{toCurrency(row.totalRevenue)}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No best-selling products available.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+    }, { ...initialAggregates })
 }
