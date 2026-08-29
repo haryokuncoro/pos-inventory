@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { Download } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -56,6 +57,10 @@ function toDateLabel(value: Date | string) {
 
 function toNumber(amount: string | number) {
   return Number(amount) || 0
+}
+
+function toCsvCell(value: string | number) {
+  return `"${String(value).replaceAll('"', '""')}"`
 }
 
 export function SalesReportTable({ initialSales, reportSummary }: SaleTableProps) {
@@ -148,6 +153,33 @@ export function SalesReportTable({ initialSales, reportSummary }: SaleTableProps
       }
     )
   }, [filteredSales])
+
+  function downloadCsv() {
+    const rows = filteredSales.map((sale) => [
+      sale.invoiceNumber,
+      new Date(sale.soldAt).toISOString(),
+      sale.cashierName,
+      sale.subtotal,
+      sale.discountAmount,
+      sale.taxAmount,
+      sale.totalAmount,
+      sale.status,
+    ])
+    const csv = [
+      ["Invoice", "Sold At", "Cashier", "Subtotal", "Discount", "Tax", "Total", "Status"],
+      ...rows,
+    ]
+      .map((row) => row.map(toCsvCell).join(","))
+      .join("\n")
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+
+    link.href = url
+    link.download = "sales-transactions.csv"
+    link.click()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="space-y-4 p-4">
@@ -352,6 +384,16 @@ export function SalesReportTable({ initialSales, reportSummary }: SaleTableProps
             </div>
 
             <div className="flex items-center gap-2 text-sm">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={downloadCsv}
+                disabled={filteredSales.length === 0}
+              >
+                <Download />
+                Download CSV
+              </Button>
               <Label htmlFor="page-size" className="text-sm text-muted-foreground">
                 Rows
               </Label>
