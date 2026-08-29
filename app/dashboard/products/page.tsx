@@ -21,13 +21,13 @@ export const dynamic = "force-dynamic"
 
 export default async function ProductPage() {
   const allowed = await checkPermission({
-        products: ["view"],
-      });
-    
-      if (!allowed) {
-        return <AccessDenied />;
-      }
-  
+    products: ["view"],
+  });
+
+  if (!allowed) {
+    return <AccessDenied />;
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />

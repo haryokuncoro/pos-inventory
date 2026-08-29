@@ -176,8 +176,8 @@ export function ImportProductsDialog({
       open={open}
       onOpenChange={handleOpenChange}
     >
-      
-    <DialogTrigger render={<Button variant="outline">  <FileUp /> Import Products</Button>} />
+
+      <DialogTrigger render={<Button variant="outline">  <FileUp /> Import Products</Button>} />
 
 
       <DialogContent className="flex w-full max-w-4xl flex-col gap-6 sm:max-w-5xl">
@@ -187,7 +187,7 @@ export function ImportProductsDialog({
           </DialogTitle>
 
           <DialogDescription>
-            
+
           </DialogDescription>
         </DialogHeader>
 
@@ -310,19 +310,19 @@ export function ImportProductsDialog({
               </div>
               <div className="border-b p-4 flex justify-end">
 
-                 <Button
-                    type="button"
-                    onClick={handleImport}
-                    disabled={!canImport}
-                  >
-                    {isImporting && (
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                    )}
+                <Button
+                  type="button"
+                  onClick={handleImport}
+                  disabled={!canImport}
+                >
+                  {isImporting && (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  )}
 
-                    {isImporting
-                      ? "Importing..."
-                      : `Import ${validRows.length} Products`}
-                  </Button>
+                  {isImporting
+                    ? "Importing..."
+                    : `Import ${validRows.length} Products`}
+                </Button>
               </div>
 
               <div className="max-h-100 overflow-auto">
@@ -451,11 +451,11 @@ export function ImportProductsDialog({
         </div>
 
         <DialogFooter>
-          
-        <DialogClose render={<Button variant="outline">Cancel</Button>} />
+
+          <DialogClose render={<Button variant="outline">Cancel</Button>} />
 
 
-         
+
         </DialogFooter>
       </DialogContent>
     </Dialog>

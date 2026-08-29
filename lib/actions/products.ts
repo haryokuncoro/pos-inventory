@@ -196,7 +196,10 @@ export async function createProduct(
       .select({ id: category.id })
       .from(category)
       .where(
-        and(eq(category.id, productData.categoryId), eq(category.storeId, storeId)),
+        and(
+          eq(category.id, productData.categoryId),
+          eq(category.storeId, storeId),
+        ),
       )
       .limit(1);
 

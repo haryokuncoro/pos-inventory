@@ -282,8 +282,8 @@ export default function ProductTable({ initialProducts, initialCategories }: Pro
       </div>
 
       <ImportProductsDialog
-                onSuccess={fetchProducts}
-              />
+        onSuccess={fetchProducts}
+      />
 
       <ProductList
         products={products}

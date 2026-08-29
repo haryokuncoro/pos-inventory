@@ -107,9 +107,7 @@ export async function importProducts(rows: unknown[]) {
     /*
      * 3. Load all required categories once
      */
-    const categoryNames = [
-      ...new Set(rowsToImport.map((row) => row.category)),
-    ];
+    const categoryNames = [...new Set(rowsToImport.map((row) => row.category))];
 
     const existingCategories = await tx.query.category.findMany({
       where: and(

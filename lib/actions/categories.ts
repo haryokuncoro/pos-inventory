@@ -17,8 +17,7 @@ type UpdateCategoryInput = z.infer<typeof categorySchema>;
 export async function getAllCategories() {
   const storeId = await getCurrentStoreId();
   return withErrorHandling("fetching categories", async () =>
-    db.select().from(category)
-      .where(eq(category.storeId, storeId))
+    db.select().from(category).where(eq(category.storeId, storeId)),
   );
 }
 
