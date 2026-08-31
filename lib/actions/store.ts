@@ -1,51 +1,46 @@
-import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { db } from "@/db/drizzle";
 import { store, storeSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-const getCachedStore = unstable_cache(
-  async () => {
-    const [result] = await db
-      .select({
-        id: store.id,
-      })
-      .from(store)
-      .where(eq(store.isActive, true))
-      .limit(1);
+/*
+ * Per-request memoisation via React cache() rather than unstable_cache: the
+ * incremental cache writes to .next/cache, which is read-only for a packaged
+ * desktop app installed in a system directory. These are two indexed
+ * single-row lookups, so a request-scoped cache is ample.
+ */
 
-    if (!result) {
-      throw new Error("No active store configured.");
-    }
+const getCachedStore = cache(async () => {
+  const [result] = await db
+    .select({
+      id: store.id,
+    })
+    .from(store)
+    .where(eq(store.isActive, true))
+    .limit(1);
 
-    return result;
-  },
-  ["current-store"],
-  {
-    revalidate: 1800, // 30 minutes
-  },
-);
+  if (!result) {
+    throw new Error("No active store configured.");
+  }
 
-const getCachedStoreWithSettings = unstable_cache(
-  async () => {
-    const currentStore = await db.query.store.findFirst({
-      where: eq(store.isActive, true),
-    });
+  return result;
+});
 
-    if (!currentStore) {
-      throw new Error("No active store configured.");
-    }
+const getCachedStoreWithSettings = cache(async () => {
+  const currentStore = await db.query.store.findFirst({
+    where: eq(store.isActive, true),
+  });
 
-    const settings = await db.query.storeSettings.findFirst({
-      where: eq(storeSettings.storeId, currentStore.id),
-    });
+  if (!currentStore) {
+    throw new Error("No active store configured.");
+  }
 
-    return { store: currentStore, settings: settings ?? null };
-  },
-  ["current-store-settings"],
-  {
-    revalidate: 1800, // 30 minutes
-  },
-);
+  const settings = await db.query.storeSettings.findFirst({
+    where: eq(storeSettings.storeId, currentStore.id),
+  });
+
+  return { store: currentStore, settings: settings ?? null };
+});
 
 export async function getCurrentStoreId() {
   const currentStore = await getCachedStore();

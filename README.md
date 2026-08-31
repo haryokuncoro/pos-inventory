@@ -105,11 +105,36 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000), register or sign in, then configure the store before using the POS.
 
+## Desktop application
+
+Electron packaging is available for macOS and Windows. The desktop launcher runs the existing Next.js application on a local loopback server and opens it in a native window.
+
+### Desktop development
+
+With the regular environment variables configured, run:
+
+```bash
+npm run dev:desktop
+```
+
+### Build a desktop package
+
+```bash
+npm run build:desktop
+```
+
+Artifacts are written to `release/`. Build Windows installers on Windows or CI. The packaged app supplies a private database location in its per-user application-data directory; the SQLite migration will use this location without requiring a database server.
+
+> The current desktop packaging foundation still uses the configured PostgreSQL database. The planned offline release will replace this with an application-local SQLite database, local-only email/password authentication, and backup/restore support.
+
 ## Available scripts
 
 ```bash
 npm run dev       # Start the development server
+npm run dev:desktop # Start Next.js and Electron for desktop development
 npm run build     # Create a production build
+npm run build:desktop # Package a desktop application
+npm run start:desktop # Launch Electron against the local packaged server
 npm run start     # Start the production server
 npm run lint      # Run ESLint
 npm run generate  # Generate Drizzle migrations

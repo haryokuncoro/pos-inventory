@@ -1,4 +1,4 @@
-import { db } from "@/db/drizzle";
+import { db, dbDriver } from "@/db/drizzle";
 import {
   user,
   category,
@@ -907,10 +907,26 @@ function money(value: number) {
   return value.toFixed(2);
 }
 
-async function seed() {
-  if (process.env.NODE_ENV === "production") {
+export type SeedOptions = {
+  /**
+   * Truncate existing master data before inserting. Used by the CLI only - the
+   * desktop first-launch bootstrap must never reset a real till's data.
+   */
+  reset?: boolean;
+};
+
+export async function seedDatabase(
+  { reset = false }: SeedOptions = {},
+) {
+  // Keyed on the destructive path rather than NODE_ENV alone, because the Next
+  // standalone server that the desktop app runs forces NODE_ENV=production.
+  if (
+    reset &&
+    dbDriver !== "pglite" &&
+    process.env.NODE_ENV === "production"
+  ) {
     throw new Error(
-      "Refusing to seed production database",
+      "Refusing to reset a production Postgres database",
     );
   }
 
@@ -951,16 +967,18 @@ async function seed() {
   );
 
    // CLEAR MASTER DATA
-  await db.delete(inventoryTransaction);
-  await db.delete(saleItem);
-  await db.delete(sale);
-  await db.delete(storeSettings);
-  await db.delete(store); 
-  await db.delete(productVariant);
-  await db.delete(product);
-  await db.delete(category);
+  if (reset) {
+    await db.delete(inventoryTransaction);
+    await db.delete(saleItem);
+    await db.delete(sale);
+    await db.delete(storeSettings);
+    await db.delete(store);
+    await db.delete(productVariant);
+    await db.delete(product);
+    await db.delete(category);
 
-  console.log("Existing master data cleared.");
+    console.log("Existing master data cleared.");
+  }
 
   // Store + Store Settings
   const [newStore] = await db
@@ -1119,13 +1137,5 @@ async function seed() {
   console.log(
     `Variants   : ${totalVariants}`,
   );
- 
+
 }
-
-
-seed().catch((error) => {
-  console.error("Seeding failed:");
-  console.error(error);
-
-  process.exit(1);
-});
