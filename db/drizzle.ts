@@ -1,30 +1,10 @@
-import { drizzle as neonDrizzle } from "drizzle-orm/neon-http";
-import { drizzle as pgDrizzle } from "drizzle-orm/node-postgres";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { config } from "dotenv";
 import * as schema from "@/db/schema";
-import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-config({ path: ".env" });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is not defined");
-}
-
-const db =
-  process.env.NODE_ENV === "production"
-    ? (neonDrizzle({
-        client: neon(databaseUrl),
-        schema,
-      }) as unknown as NodePgDatabase<typeof schema>)
-    : pgDrizzle(
-        new Pool({
-          connectionString: databaseUrl,
-        }),
-        { schema }
-      );
-
-export { db };
+export const db = drizzle(pool, { schema });
