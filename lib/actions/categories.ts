@@ -61,7 +61,7 @@ export async function deleteCategory(id: string) {
     const deletedCategories = await db
       .delete(category)
       .where(and(eq(category.id, id), eq(category.storeId, storeId)))
-      .returning({ id: category.id });
+      .returning();
 
     if (deletedCategories.length === 0) {
       throw new Error("Category not found");

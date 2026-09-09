@@ -328,7 +328,7 @@ export async function deleteProduct(id: string) {
     const result = await db
       .delete(product)
       .where(and(eq(product.id, id), eq(product.storeId, storeId)))
-      .returning({ id: product.id });
+      .returning();
 
     if (result.length === 0) {
       throw new Error("Product not found");

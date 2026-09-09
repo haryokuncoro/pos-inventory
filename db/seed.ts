@@ -973,9 +973,7 @@ async function seed() {
       email: "store@example.com",
       isActive: true,
     })
-    .returning({
-      id: store.id,
-    });
+    .returning();
 
   await db.insert(storeSettings).values({
     storeId: newStore.id,
@@ -1083,9 +1081,7 @@ async function seed() {
   const insertedVariants = await db
     .insert(productVariant)
     .values(variantRows)
-    .returning({
-      id: productVariant.id,
-    });
+    .returning();
 
   console.log(
     `Product variants created: ${insertedVariants.length}`,

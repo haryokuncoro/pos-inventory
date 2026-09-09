@@ -427,10 +427,7 @@ export async function createSale(
 
           status: "COMPLETED",
         })
-        .returning({
-          id: sale.id,
-          invoiceNumber: sale.invoiceNumber,
-        });
+        .returning();
 
       if (!createdSale) {
         throw new Error("Gagal membuat transaksi.");
@@ -462,9 +459,7 @@ export async function createSale(
               gte(productVariant.stockQuantity, item.quantity),
             ),
           )
-          .returning({
-            id: productVariant.id,
-          });
+          .returning();
 
         if (updatedRows.length === 0) {
           const variant = variantMap.get(item.variantId);
