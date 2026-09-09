@@ -9,10 +9,12 @@
     "lint": "eslint",
     "generate": "npx drizzle-kit generate",
     "migrate": "npx drizzle-kit migrate",
-    "db:seed": "tsx db/seed.ts"
+    "seed": "bun --bun db/seed.ts",
+    "studio": "npx drizzle-kit studio"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
+    "@electric-sql/pglite": "^0.5.8",
     "@hookform/resolvers": "^5.7.1",
     "@neondatabase/serverless": "^1.1.0",
     "@types/pg": "^8.21.0",
