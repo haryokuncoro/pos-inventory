@@ -59,13 +59,13 @@ A store-scoped point-of-sale and inventory dashboard built with Next.js. It brin
 
 ### Prerequisites
 
-- Node.js with npm
+- Bun
 - A PostgreSQL database, such as Neon
 
 ### 1. Install dependencies
 
 ```bash
-npm install
+bun install
 ```
 
 ### 2. Configure environment variables
@@ -87,32 +87,22 @@ The Google variables are needed only when Google sign-in is enabled. `DATABASE_U
 Generate a migration after schema changes, then apply migrations:
 
 ```bash
-npm run generate
-npm run migrate
+bun generate
+bun migrate
 ```
 
 ### 4. Seed data (optional)
 
 ```bash
-npm run db:seed
+bun seed
 ```
 
 ### 5. Start the development server
 
 ```bash
-npm run dev
+bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000), register or sign in, then configure the store before using the POS.
 
-## Available scripts
 
-```bash
-npm run dev       # Start the development server
-npm run build     # Create a production build
-npm run start     # Start the production server
-npm run lint      # Run ESLint
-npm run generate  # Generate Drizzle migrations
-npm run migrate   # Apply Drizzle migrations
-npm run db:seed   # Seed the database
-```
